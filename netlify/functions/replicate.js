@@ -10,27 +10,26 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { action, predictionId, prompt, negativePrompt, apiKey } = JSON.parse(event.body);
+    const { action, predictionId, prompt, apiKey } = JSON.parse(event.body);
     const key = apiKey;
 
     if (action === 'create') {
-      const res = await fetch('https://api.replicate.com/v1/predictions', {
+      const res = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
         method: 'POST',
         headers: {
           'Authorization': 'Token ' + key,
           'Content-Type': 'application/json',
+          'Prefer': 'wait',
         },
         body: JSON.stringify({
-          version: 'db21e45d3f7023abc2a46ee38a23973f6dce16bb082a930b0c49861f96d1e5bf',
           input: {
             prompt: prompt,
-            negative_prompt: negativePrompt,
-            width: 768,
-            height: 768,
+            go_fast: true,
             num_outputs: 1,
-            num_inference_steps: 25,
-            guidance_scale: 7.5,
-            scheduler: 'DPMSolverMultistep',
+            aspect_ratio: '1:1',
+            output_format: 'png',
+            output_quality: 90,
+            num_inference_steps: 4,
           }
         })
       });
