@@ -133,6 +133,7 @@
         </div>
         <button class="btn ai" onclick="generateAI()">✦ Сгенерировать AI картинку</button>
         <div class="ai-status" id="aiStatus"></div>
+      <div id="logBox" style="background:#0a0a12;border-radius:6px;padding:6px 8px;max-height:100px;overflow-y:auto;margin-top:4px;display:none;font-family:'Space Mono',monospace"></div>
         <div class="ai-img-wrap" id="aiImgWrap">
           <img id="aiImg" crossorigin="anonymous">
         </div>
@@ -361,6 +362,21 @@ const STYLE_SUFFIX=', 2d flat cartoon vector art, side view, isolated on white b
 function setAiStatus(msg,loading=false){
   const el=document.getElementById('aiStatus');
   el.innerHTML=loading?`<span class="spinner"></span>${msg}`:msg;
+  addLog(msg, loading?'info':'ok');
+}
+
+function addLog(msg, type='info'){
+  const box=document.getElementById('logBox');
+  if(!box)return;
+  const ts=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const color=type==='err'?'#FF6242':type==='ok'?'#00FFC8':'#8888aa';
+  const line=document.createElement('div');
+  line.style.cssText=`color:${color};font-size:10px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)`;
+  line.textContent=`[${ts}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop=box.scrollHeight;
+  // Keep max 20 lines
+  while(box.children.length>20)box.removeChild(box.firstChild);
 }
 
 async function translatePrompt(ruText){
@@ -417,6 +433,10 @@ async function generateAI(){
   const fullPrompt=englishBase+STYLE_SUFFIX;
 
   setAiStatus('Отправляем запрос...', true);
+  document.getElementById('logBox').style.display='block';
+  document.getElementById('logBox').innerHTML='';
+  addLog('Промпт: '+englishBase, 'info');
+  addLog('Ключ: '+key.slice(0,8)+'...', 'info');
   document.getElementById('canvasLoading').style.display='flex';
   document.getElementById('loadingText').textContent='Генерируем AI картинку...';
   document.getElementById('canvasWrap').style.display='none';
@@ -438,14 +458,18 @@ async function generateAI(){
       })
     });
 
+    addLog('Ответ сервера: '+startRes.status, startRes.ok?'ok':'err');
     if(!startRes.ok){
       const txt=await startRes.text();
+      addLog('Ошибка: '+txt.slice(0,150), 'err');
       throw new Error('Ошибка '+startRes.status+': '+txt.slice(0,120));
     }
 
     const prediction=await startRes.json();
+    addLog('Prediction JSON: '+JSON.stringify(prediction).slice(0,100), 'info');
     const predId=prediction.id;
     if(!predId)throw new Error('Нет ID: '+JSON.stringify(prediction).slice(0,100));
+    addLog('ID получен: '+predId, 'ok');
     setAiStatus('Рисуем... ~20-40 сек', true);
 
     // Poll via Netlify Function
@@ -458,8 +482,9 @@ async function generateAI(){
         body:JSON.stringify({action:'poll',predictionId:predId,apiKey:key})
       });
       const pollData=await pollRes.json();
-      if(pollData.status==='succeeded'){result=pollData;break}
-      if(pollData.status==='failed'){throw new Error('Провалилась: '+(pollData.error||'?'))}
+      addLog(`Статус [${i*2}с]: ${pollData.status}`, 'info');
+      if(pollData.status==='succeeded'){addLog('Готово!','ok');result=pollData;break}
+      if(pollData.status==='failed'){addLog('Ошибка: '+(pollData.error||'?'),'err');throw new Error('Провалилась: '+(pollData.error||'?'))}
       setAiStatus(`Рисуем... (${i*2}с)`, true);
     }
 
@@ -486,6 +511,7 @@ async function generateAI(){
   } catch(e){
     document.getElementById('canvasLoading').style.display='none';
     document.getElementById('emptyState').style.display='flex';
+    addLog('ОШИБКА: '+e.message,'err');
     setAiStatus('Ошибка: '+e.message);
     toast('Ошибка: '+e.message,'err');
   }
