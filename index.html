@@ -65,6 +65,13 @@
   .ok-box{font-size:11px;color:#00b894;padding:7px 10px;background:rgba(0,184,148,.08);border-radius:7px;border:1px solid rgba(0,184,148,.2)}
   .warn-box{font-size:11px;color:#ff6b9d;padding:7px 10px;background:rgba(255,107,157,.08);border-radius:7px;border:1px solid rgba(255,107,157,.2)}
   .info-box{font-size:11px;color:var(--text2);padding:8px 10px;background:rgba(124,106,255,.08);border-radius:7px;border:1px solid rgba(124,106,255,.2);line-height:1.5}
+  .diff-btn{padding:8px 6px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2);transition:all .15s}
+  .diff-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+  .diff-btn.active{border-width:2px;color:var(--text)}
+  #diff_easy.active{border-color:#00FFC8;background:rgba(0,255,200,.1);color:#00FFC8}
+  #diff_medium.active{border-color:#FFEB3B;background:rgba(255,235,59,.1);color:#FFEB3B}
+  #diff_hard.active{border-color:#FF8D00;background:rgba(255,141,0,.1);color:#FF8D00}
+  #diff_super_hard.active{border-color:#FF6242;background:rgba(255,98,66,.1);color:#FF6242}
 
   /* Scheme cards */
   .scheme-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
@@ -198,18 +205,29 @@
       </div>
 
       <div class="divider"></div>
-      <div class="slabel">Параметры путей</div>
+      <div class="slabel">Сложность уровня</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px">
+        <div id="diff_easy" onclick="setDifficulty('easy')" style="padding:9px 6px;border-radius:8px;border:2px solid #00FFC8;cursor:pointer;text-align:center;font-size:11px;font-weight:700;background:rgba(0,255,200,.12);color:#00FFC8">★ EASY</div>
+        <div id="diff_medium" onclick="setDifficulty('medium')" style="padding:9px 6px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">★★ MEDIUM</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <div id="diff_hard" onclick="setDifficulty('hard')" style="padding:9px 6px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">★★★ HARD</div>
+        <div id="diff_super_hard" onclick="setDifficulty('super_hard')" style="padding:9px 6px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">★★★★ S.HARD</div>
+      </div>
+      <div id="diffInfo" style="font-size:10px;color:#00FFC8;padding:6px 8px;background:rgba(0,255,200,.05);border-radius:6px;line-height:1.5;margin-top:4px">Длинные плавные пути · мало поворотов · легко читается</div>
+      <div class="divider"></div>
+      <div class="slabel">Тонкая настройка</div>
       <div class="ctrl">
-        <div class="ctrl-head"><label>Мин. длина пути</label><span class="ctrl-val" id="minLV">3</span></div>
-        <input type="range" id="minL" min="2" max="12" value="3" step="1" oninput="minLV.textContent=this.value">
+        <div class="ctrl-head"><label>Мин. длина пути</label><span class="ctrl-val" id="minLV">5</span></div>
+        <input type="range" id="minL" min="2" max="12" value="5" step="1" oninput="minLV.textContent=this.value">
       </div>
       <div class="ctrl">
-        <div class="ctrl-head"><label>Макс. длина пути</label><span class="ctrl-val" id="maxLV">30</span></div>
-        <input type="range" id="maxL" min="5" max="88" value="30" step="1" oninput="maxLV.textContent=this.value">
+        <div class="ctrl-head"><label>Макс. длина пути</label><span class="ctrl-val" id="maxLV">20</span></div>
+        <input type="range" id="maxL" min="5" max="88" value="20" step="1" oninput="maxLV.textContent=this.value">
       </div>
       <div class="ctrl">
-        <div class="ctrl-head"><label>Доля змейки</label><span class="ctrl-val" id="snakeV">53%</span></div>
-        <input type="range" id="snakeR" min="0" max="100" value="53" step="1" oninput="snakeV.textContent=this.value+'%'">
+        <div class="ctrl-head"><label>Доля змейки</label><span class="ctrl-val" id="snakeV">65%</span></div>
+        <input type="range" id="snakeR" min="0" max="100" value="65" step="1" oninput="snakeV.textContent=this.value+'%'">
       </div>
       <button class="btn primary" onclick="generateArrows()">Генерировать стрелки</button>
       <button class="btn" onclick="generateArrows()">↺ Перегенерировать</button>
@@ -305,7 +323,7 @@ function toast(msg,type='ok'){
 function goStep(n){
   if(n>1&&!imgEl){toast('Сначала загрузи или сгенерируй картинку!','err');return}
   if(n>1&&!sil)renderGrid(false);
-  if(n===3){buildSchemeGrid();buildCpickGrid()}
+  if(n===3){buildSchemeGrid();buildCpickGrid();setDifficulty(currentDifficulty);}
   if(n===4){if(!arrows.length)generateArrows();showExport()}
   [1,2,3,4].forEach(i=>{
     document.getElementById('p'+i).classList.toggle('show',i===n);
@@ -760,6 +778,104 @@ function getPathColor(path){
   return pal[idx];
 }
 
+// ─── DIFFICULTY SYSTEM ───────────────────────────────────────────────────────
+// Based on real data from 170 levels analysis
+// Key insight: difficulty = grid density + path complexity, NOT just path length
+// Directions are always ~25% each regardless of difficulty
+
+const DIFFICULTY_PRESETS = {
+  easy: {
+    // Real data: grid~148 cells, ~20 arrows, avg_len=7.5, changes/arrow=1.7
+    // Easy levels have FEWER, LONGER paths covering whole silhouette
+    // Snake 30% - more straight lines, simpler to follow
+    minLen: 5,
+    maxLen: 20,
+    snake: 30,
+    // Target arrows relative to grid size (cells/arrows ratio)
+    // Easy: ~7 cells per arrow (long paths)
+    targetCellsPerArrow: 7,
+    straight_boost: 1.5,  // more straight paths
+    color: '#00FFC8',
+    border: '#00FFC8',
+    bg: 'rgba(0,255,200,.12)',
+    label: '★ EASY',
+    info: 'Длинные плавные пути · мало поворотов · легко читается',
+  },
+  medium: {
+    // Real data: grid~748 cells, ~63 arrows, avg_len=7.8, changes/arrow=2.2
+    // More arrows, moderate path length
+    minLen: 4,
+    maxLen: 20,
+    snake: 45,
+    targetCellsPerArrow: 7.8,
+    straight_boost: 1.0,
+    color: '#FFEB3B',
+    border: '#FFEB3B',
+    bg: 'rgba(255,235,59,.12)',
+    label: '★★ MEDIUM',
+    info: 'Умеренные пути · средние повороты · баланс сложности',
+  },
+  hard: {
+    // Real data: grid~720 cells, ~78 arrows, avg_len=7.9, changes/arrow=1.8
+    // More arrows than medium, similar grid size but denser
+    minLen: 3,
+    maxLen: 18,
+    snake: 40,
+    targetCellsPerArrow: 6.5,
+    straight_boost: 0.7,
+    color: '#FF8D00',
+    border: '#FF8D00',
+    bg: 'rgba(255,141,0,.12)',
+    label: '★★★ HARD',
+    info: 'Короткие плотные пути · частые повороты · запутанно',
+  },
+  super_hard: {
+    // Real data: grid~2351 cells, ~150 arrows, avg_len=9.4, changes/arrow=2.6
+    // Huge grid, many arrows, most changes per arrow
+    minLen: 2,
+    maxLen: 35,
+    snake: 42,
+    targetCellsPerArrow: 9.4,
+    straight_boost: 0.5,
+    color: '#FF2ECC',
+    border: '#FF2ECC',
+    bg: 'rgba(255,46,204,.12)',
+    label: '★★★★ S.HARD',
+    info: 'Максимальная плотность · много смен · огромный объём',
+  },
+};
+
+let currentDifficulty = 'easy';
+
+function setDifficulty(diff) {
+  currentDifficulty = diff;
+  const preset = DIFFICULTY_PRESETS[diff];
+
+  // Update all buttons
+  Object.keys(DIFFICULTY_PRESETS).forEach(d => {
+    const btn = document.getElementById('diff_'+d);
+    if (!btn) return;
+    const p = DIFFICULTY_PRESETS[d];
+    if (d === diff) {
+      btn.style.cssText = `padding:8px;border-radius:8px;border:2px solid ${p.color};cursor:pointer;text-align:center;font-size:11px;font-weight:700;background:${p.bg};color:${p.color}`;
+    } else {
+      btn.style.cssText = 'padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--text2)';
+    }
+  });
+
+  // Update sliders
+  document.getElementById('minL').value = preset.minLen;
+  document.getElementById('minLV').textContent = preset.minLen;
+  document.getElementById('maxL').value = preset.maxLen;
+  document.getElementById('maxLV').textContent = preset.maxLen;
+  document.getElementById('snakeR').value = preset.snake;
+  document.getElementById('snakeV').textContent = preset.snake + '%';
+
+  // Update info
+  document.getElementById('diffInfo').textContent = preset.info;
+  document.getElementById('diffInfo').style.color = preset.color;
+}
+
 // ─── SCHEME UI ────────────────────────────────────────────────────────────────
 function buildSchemeGrid(){
   const g=document.getElementById('schemeGrid');g.innerHTML='';
@@ -805,6 +921,63 @@ function buildCpickGrid(){
 
 function cpickAll(){document.querySelectorAll('.cpick-cell').forEach(d=>{d.classList.add('sel')});if(arrows.length)drawArrows()}
 function cpickNone(){document.querySelectorAll('.cpick-cell').forEach(d=>{d.classList.remove('sel')})}
+
+// ─── DIFFICULTY PRESETS (based on real level analysis) ───────────────────────
+const DIFFICULTY_PRESETS = {
+  easy: {
+    label:'Easy', emoji:'😊',
+    minLen:5, maxLen:15, snakePct:65,
+    desc:'duration≈75s | complete≈41min | lose≈4%',
+    hint:'Длинные прямые пути — легко читаются',
+    color:'#00FFC8',
+  },
+  medium: {
+    label:'Medium', emoji:'😐',
+    minLen:3, maxLen:20, snakePct:45,
+    desc:'duration≈118s | complete≈141min | lose≈5%',
+    hint:'Средние пути — умеренная сложность',
+    color:'#FFEB3B',
+  },
+  hard: {
+    label:'Hard', emoji:'😤',
+    minLen:2, maxLen:12, snakePct:35,
+    desc:'duration≈176s | complete≈256min | lose≈9%',
+    hint:'Короткие запутанные пути — надо думать',
+    color:'#FF8D00',
+  },
+  super_hard: {
+    label:'Super Hard', emoji:'💀',
+    minLen:2, maxLen:8, snakePct:30,
+    desc:'duration≈200s | complete≈398min | lose≈9%',
+    hint:'Очень короткие хаотичные пути — мозговынос',
+    color:'#FF6242',
+  },
+};
+
+let currentDifficulty = 'easy';
+
+function setDifficulty(diff){
+  currentDifficulty = diff;
+  const p = DIFFICULTY_PRESETS[diff];
+  
+  // Update buttons
+  Object.keys(DIFFICULTY_PRESETS).forEach(d=>{
+    const btn = document.getElementById('diff_'+d);
+    if(btn) btn.classList.toggle('active', d===diff);
+  });
+  
+  // Apply params to sliders
+  const minL = document.getElementById('minL');
+  const maxL = document.getElementById('maxL');
+  const snakeR = document.getElementById('snakeR');
+  if(minL){ minL.value=p.minLen; document.getElementById('minLV').textContent=p.minLen; }
+  if(maxL){ maxL.value=p.maxLen; document.getElementById('maxLV').textContent=p.maxLen; }
+  if(snakeR){ snakeR.value=p.snakePct; document.getElementById('snakeV').textContent=p.snakePct+'%'; }
+  
+  // Show info
+  const info = document.getElementById('diffInfo');
+  if(info) info.innerHTML = p.hint+'<br><span style="color:'+p.color+'">'+p.desc+'</span>';
+}
 
 // ─── PATH BUILDERS ────────────────────────────────────────────────────────────
 function sampleLen(mn,mx){
@@ -864,11 +1037,17 @@ function tryL(sx,sy,len,cells,used,gw,gh){
 
 function buildPath(sx,sy,len,cells,used,gw,gh){
   const sp=+document.getElementById('snakeR').value/100;
+  const preset=DIFFICULTY_PRESETS[currentDifficulty];
+  const straightBoost=preset.straight_boost;
+  // Difficulty affects pattern distribution:
+  // Easy: more straight lines (straightBoost=1.5)
+  // Hard/SuperHard: more L-shapes and complex (straightBoost=0.5)
+  const straightChance=Math.min(0.45, 0.15*straightBoost);
   const r=Math.random();
   let p;
   if(r<sp)p=trySnake(sx,sy,len,cells,used,gw,gh);
-  else if(r<sp+.12)p=tryL(sx,sy,len,cells,used,gw,gh);
-  else p=tryStraight(sx,sy,len,cells,used,gw,gh);
+  else if(r<sp+straightChance)p=tryStraight(sx,sy,len,cells,used,gw,gh);
+  else p=tryL(sx,sy,len,cells,used,gw,gh);
   if(!p)p=trySnake(sx,sy,len,cells,used,gw,gh);
   if(!p)p=tryStraight(sx,sy,len,cells,used,gw,gh);
   if(!p)p=tryL(sx,sy,len,cells,used,gw,gh);
@@ -881,6 +1060,7 @@ function generateArrows(){
   const{cells,gw,gh}=sil;
   const mn=+document.getElementById('minL').value;
   const mx=+document.getElementById('maxL').value;
+  const preset=DIFFICULTY_PRESETS[currentDifficulty];
   const unassigned=new Set(cells),used=new Set();
   arrows=[];let iters=0;
 
