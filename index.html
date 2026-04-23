@@ -161,6 +161,13 @@
       <button class="btn" onclick="renderGrid(false)">Показать силуэт</button>
       <button class="btn" onclick="renderGrid(true)">Показать цветной превью</button>
       <div class="divider"></div>
+      <div class="slabel">Редактор силуэта</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <div id="editDraw" onclick="setEditMode('draw')" style="padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)">✏ Рисовать</div>
+        <div id="editErase" onclick="setEditMode('erase')" style="padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)">✕ Стирать</div>
+      </div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.5;padding:4px 0">Левая кнопка мыши — рисовать/стирать. Зажми и веди.</div>
+      <div class="divider"></div>
       <div class="sgrid" id="gridStats"></div>
       <button class="btn primary" onclick="goStep(3)">Генерировать стрелки →</button>
       <button class="btn" onclick="goStep(1)">← Назад</button>
@@ -282,6 +289,7 @@ const SCHEMES=[
 ];
 
 let imgEl=null,sil=null,arrows=[],pixelMap=null;
+let editMode='draw',isDrawing=false,cellSize=10;
 let colorMode='scheme';
 let activeScheme=SCHEMES[0];
 let aiImageUrl=null;
@@ -608,13 +616,112 @@ function renderGrid(colorPreview){
   });
   document.getElementById('emptyState').style.display='none';
   document.getElementById('canvasWrap').style.display='block';
+  cellSize=cell;
+  initCanvasEditing();
   const fill=Math.round(100*cells.size/(gw*gh));
   document.getElementById('gridStats').innerHTML=`
     <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
     <div class="sc"><div class="val">${cells.size}</div><div class="lbl">ЯЧЕЕК</div></div>
     <div class="sc"><div class="val">${fill}%</div><div class="lbl">ЗАПОЛНЕНИЕ</div></div>
     <div class="sc"><div class="val">${cell}px</div><div class="lbl">ЯЧЕЙКА</div></div>`;
-  toast(colorPreview?'Цветной превью':'Силуэт готов');
+  toast(colorPreview?'Цветной превью':'Силуэт готов — рисуй/стирай кубики!');
+}
+
+// ─── EDIT MODE ───────────────────────────────────────────────────────────────
+function setEditMode(mode){
+  editMode=mode;
+  const d=document.getElementById('editDraw');
+  const e=document.getElementById('editErase');
+  if(mode==='draw'){
+    d.style.cssText='padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12);color:var(--text)';
+    e.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
+    document.getElementById('mainCanvas').style.cursor='crosshair';
+  } else {
+    e.style.cssText='padding:8px;border-radius:8px;border:2px solid var(--accent2);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(255,107,157,.12);color:var(--text)';
+    d.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
+    document.getElementById('mainCanvas').style.cursor='cell';
+  }
+}
+
+function getCellFromEvent(e){
+  if(!sil)return null;
+  const cv=document.getElementById('mainCanvas');
+  const rect=cv.getBoundingClientRect();
+  const scaleX=cv.width/rect.width;
+  const scaleY=cv.height/rect.height;
+  const px=(e.clientX-rect.left)*scaleX;
+  const py=(e.clientY-rect.top)*scaleY;
+  const x=Math.floor(px/cellSize);
+  const y=Math.floor(py/cellSize);
+  const {gw,gh}=sil;
+  if(x<0||x>=gw||y<0||y>=gh)return null;
+  const uy=(gh-1)-y; // flip Y for Unity coords
+  return {x,y,uy,key:x+'_'+uy};
+}
+
+function editCell(e){
+  if(!sil)return;
+  const cell=getCellFromEvent(e);
+  if(!cell)return;
+  const{key,uy,x}=cell;
+  if(editMode==='draw'){
+    sil.cells.add(key);
+    if(!pixelMap[key])pixelMap[key]={r:100,g:100,b:255,bright:150};
+  } else {
+    sil.cells.delete(key);
+  }
+  // Redraw just this cell
+  redrawCell(cell);
+  updateGridStats();
+}
+
+function redrawCell(cell){
+  const cv=document.getElementById('mainCanvas');
+  const ctx=cv.getContext('2d');
+  const{x,y,key}=cell;
+  const {gh}=sil;
+  const sy=y*cellSize;
+  ctx.fillStyle='#0d0d14';
+  ctx.fillRect(x*cellSize,sy,cellSize,cellSize);
+  if(sil.cells.has(key)){
+    ctx.fillStyle='#1e1e3a';ctx.fillRect(x*cellSize,sy,cellSize,cellSize);
+    ctx.fillStyle='#4a5aff';ctx.fillRect(x*cellSize+1,sy+1,cellSize-2,cellSize-2);
+  }
+}
+
+function updateGridStats(){
+  if(!sil)return;
+  const{gw,gh,cells}=sil;
+  const fill=Math.round(100*cells.size/(gw*gh));
+  document.getElementById('gridStats').innerHTML=`
+    <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
+    <div class="sc"><div class="val">${cells.size}</div><div class="lbl">ЯЧЕЕК</div></div>
+    <div class="sc"><div class="val">${fill}%</div><div class="lbl">ЗАПОЛНЕНИЕ</div></div>
+    <div class="sc"><div class="val">${cellSize}px</div><div class="lbl">ЯЧЕЙКА</div></div>`;
+}
+
+function initCanvasEditing(){
+  const cv=document.getElementById('mainCanvas');
+  cv.style.cursor='crosshair';
+  cv.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    isDrawing=true;
+    editCell(e);
+    e.preventDefault();
+  });
+  cv.addEventListener('mousemove',e=>{
+    if(!isDrawing)return;
+    editCell(e);
+  });
+  cv.addEventListener('mouseup',()=>isDrawing=false);
+  cv.addEventListener('mouseleave',()=>isDrawing=false);
+  cv.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    const prev=editMode;
+    editMode='erase';
+    editCell(e);
+    editMode=prev;
+  });
 }
 
 // ─── ZONE COLOR ───────────────────────────────────────────────────────────────
