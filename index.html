@@ -170,15 +170,18 @@
       <!-- Grid size difficulty hint -->
       <div id="gridSizeHint" class="info-box" style="font-size:10px"></div>
       <div class="ctrl">
-        <div class="ctrl-head"><label>Порог силуэта</label><span class="ctrl-val" id="thV">128</span></div>
-        <input type="range" id="th" min="10" max="245" value="128" step="1" oninput="thV.textContent=this.value">
+        <div class="ctrl-head"><label>Чувствительность силуэта</label><span class="ctrl-val" id="thV">128</span></div>
+        <input type="range" id="th" min="10" max="245" value="128" step="1" oninput="thV.textContent=this.value;renderGrid(false)">
       </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><label>Инвертировать маску</label><span class="ctrl-val" id="invV">Нет</span></div>
-        <input type="range" id="inv" min="0" max="1" value="0" step="1" oninput="invV.textContent=this.value=='1'?'Да':'Нет'">
+      <div style="display:flex;gap:5px;margin-top:-4px">
+        <button class="btn" style="padding:5px;font-size:10px;flex:1" onclick="autoThreshold()">⚡ Авто</button>
+        <button class="btn" style="padding:5px;font-size:10px;flex:1" onclick="document.getElementById('inv').value=document.getElementById('inv').value=='1'?'0':'1';invV.textContent=document.getElementById('inv').value=='1'?'Да':'Нет';renderGrid(false)">⇄ Инверт: <span id="invV">Нет</span></button>
+        <input type="hidden" id="inv" value="0">
       </div>
-      <button class="btn" onclick="renderGrid(false)">Показать силуэт</button>
-      <button class="btn" onclick="renderGrid(true)">Показать цветной превью</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px">
+        <button class="btn" onclick="renderGrid(false)">Силуэт</button>
+        <button class="btn" onclick="renderGrid(true)">Цвет превью</button>
+      </div>
       <div class="divider"></div>
       <div class="slabel">Редактор силуэта</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
@@ -740,10 +743,20 @@ function getGrid(){
   ctx.drawImage(imgEl,0,0,gw,gh);
   const px=ctx.getImageData(0,0,gw,gh).data;
 
-  const corners=[px[3],px[(gw-1)*4+3],px[(gh-1)*gw*4+3],px[((gh-1)*gw+gw-1)*4+3]];
-  const transBg=corners.some(a=>a<30);
-  const c0r=px[0],c0g=px[1],c0b=px[2];
-  const lightBg=!transBg&&(c0r+c0g+c0b)/3>200;
+  // Detect background type by sampling corners + edges
+  const sampleAlphas=[px[3],px[(gw-1)*4+3],px[(gh-1)*gw*4+3],px[((gh-1)*gw+gw-1)*4+3]];
+  const transBg=sampleAlphas.some(a=>a<30);
+
+  // Sample background color from multiple corners for robustness
+  let bgR=0,bgG=0,bgB=0,bgCount=0;
+  const cornerPts=[[0,0],[gw-1,0],[0,gh-1],[gw-1,gh-1],[Math.floor(gw/2),0],[0,Math.floor(gh/2)]];
+  for(const[cx,cy] of cornerPts){
+    const ci=(cy*gw+cx)*4;
+    bgR+=px[ci];bgG+=px[ci+1];bgB+=px[ci+2];bgCount++;
+  }
+  bgR/=bgCount;bgG/=bgCount;bgB/=bgCount;
+  const bgBright=(bgR*0.299+bgG*0.587+bgB*0.114);
+  const lightBg=!transBg&&bgBright>160;
 
   pixelMap={};
   const cells=new Set();
@@ -757,9 +770,17 @@ function getGrid(){
       const uy=(gh-1)-row;
       pixelMap[col+'_'+uy]={r:r2,g:g2,b:b2,bright};
       let inside;
-      if(transBg)inside=a2>30;
-      else if(lightBg)inside=inv?(bright>200):(bright<255-thresh+10);
-      else inside=inv?(bright<thresh):(bright>thresh);
+      if(transBg){
+        // Transparent bg: use alpha channel
+        inside=inv?(a2<30):(a2>thresh/2);
+      } else if(lightBg){
+        // Light bg: pixel is inside if it differs from bg by more than threshold
+        const diff=Math.abs(bright-bgBright);
+        inside=inv?(diff<thresh*0.3):(diff>thresh*0.3);
+      } else {
+        // Dark bg: pixel is inside if it's brighter than threshold
+        inside=inv?(bright<thresh):(bright>thresh);
+      }
       if(inside){
         cells.add(col+'_'+uy);
         if(bright<minB)minB=bright;
@@ -769,6 +790,56 @@ function getGrid(){
   }
   sil={cells,gw,gh,minB,maxB};
   return sil;
+}
+
+function autoThreshold(){
+  // Auto-detect best threshold by analysing image contrast
+  if(!imgEl)return;
+  const gs=+document.getElementById('gs').value;
+  const asp=imgEl.naturalWidth/imgEl.naturalHeight;
+  let gw,gh;
+  if(asp>=1){gw=gs;gh=Math.max(3,Math.round(gs/asp))}
+  else{gh=gs;gw=Math.max(3,Math.round(gs*asp))}
+  const oc=document.createElement('canvas');
+  oc.width=gw;oc.height=gh;
+  const ctx=oc.getContext('2d');
+  ctx.drawImage(imgEl,0,0,gw,gh);
+  const px=ctx.getImageData(0,0,gw,gh).data;
+
+  // Collect all brightness values
+  const brights=[];
+  for(let i=0;i<px.length;i+=4){
+    brights.push(px[i]*0.299+px[i+1]*0.587+px[i+2]*0.114);
+  }
+  brights.sort((a,b)=>a-b);
+
+  // Check bg type from corners
+  const corners=[px[3],px[(gw-1)*4+3],px[(gh-1)*gw*4+3],px[((gh-1)*gw+gw-1)*4+3]];
+  const transBg=corners.some(a=>a<30);
+
+  let thresh;
+  if(transBg){
+    // Transparent: alpha-based, threshold not critical
+    thresh=128;
+  } else {
+    // Use Otsu-like method: find valley between two peaks
+    // Simple: use 30th percentile as threshold to keep fine details
+    const bgBright=brights[0]*0.299+brights[0]*0.587+brights[0]*0.114;
+    const c0bright=(px[0]*0.299+px[1]*0.587+px[2]*0.114);
+    const lightBg=c0bright>160;
+    if(lightBg){
+      // For light bg: set threshold so that 70% of pixels are excluded (bg)
+      thresh=Math.round(brights[Math.floor(brights.length*0.70)]);
+    } else {
+      // Dark bg: include top 40% brightest pixels
+      thresh=Math.round(brights[Math.floor(brights.length*0.60)]);
+    }
+    thresh=Math.max(20,Math.min(230,thresh));
+  }
+  document.getElementById('th').value=thresh;
+  document.getElementById('thV').textContent=thresh;
+  renderGrid(false);
+  toast('Авто-порог: '+thresh);
 }
 
 function renderGrid(colorPreview){
