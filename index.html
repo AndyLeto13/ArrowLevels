@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrow Level Editor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root{--bg:#0d0d14;--bg2:#13131f;--bg3:#1a1a2e;--accent:#7c6aff;--accent2:#ff6b9d;--accent3:#00e5ff;--text:#f0f0f8;--text2:#8888aa;--border:rgba(255,255,255,0.08)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
+  .app{display:grid;grid-template-columns:300px 1fr;grid-template-rows:60px 1fr;height:100vh}
+  .header{grid-column:1/-1;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px}
+  .logo{font-size:17px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(135deg,#7c6aff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .steps-nav{display:flex;gap:4px;margin-left:auto}
+  .step-btn{padding:5px 12px;border-radius:20px;font-size:10px;font-weight:600;font-family:'Space Mono',monospace;border:1px solid var(--border);cursor:pointer;background:transparent;color:var(--text2);transition:all .2s}
+  .step-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+  .step-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .step-btn.done{color:var(--accent3);border-color:rgba(0,229,255,.3)}
+  .sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px}
+  .sidebar::-webkit-scrollbar{width:3px}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .panel{display:none;flex-direction:column;gap:11px}
+  .panel.show{display:flex}
+  .slabel{font-size:9px;font-weight:600;letter-spacing:2px;color:var(--text2);text-transform:uppercase;font-family:'Space Mono',monospace}
+  .drop-zone{border:1.5px dashed rgba(124,106,255,.4);border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(124,106,255,.04)}
+  .drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(124,106,255,.1)}
+  .drop-icon{font-size:24px;margin-bottom:6px}
+  .drop-text{font-size:11px;color:var(--text2);line-height:1.5}
+  .drop-text strong{color:var(--text);font-weight:600;display:block;margin-bottom:2px}
+  #imgPreview{width:100%;border-radius:8px;display:none;border:1px solid var(--border);margin-top:6px}
+  .ctrl{display:flex;flex-direction:column;gap:5px}
+  .ctrl-head{display:flex;justify-content:space-between;align-items:center}
+  .ctrl-head label{font-size:11px;color:var(--text2)}
+  .ctrl-val{font-size:11px;font-weight:700;font-family:'Space Mono',monospace;color:var(--accent);background:rgba(124,106,255,.12);padding:1px 6px;border-radius:4px}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.1);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer}
+  .btn{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif;border:1px solid var(--border);cursor:pointer;background:rgba(255,255,255,.04);color:var(--text);transition:all .15s;width:100%}
+  .btn:hover{background:rgba(255,255,255,.08)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{opacity:.88}
+  .btn.success{background:linear-gradient(135deg,#00b894,#00cec9);border:none;color:#fff}
+  .btn.ai{background:linear-gradient(135deg,#7c6aff,#ff6b9d);border:none;color:#fff;font-size:13px;padding:10px}
+  .btn.ai:hover{opacity:.88}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .sc{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+  .sc .val{font-size:17px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace}
+  .sc .lbl{font-size:9px;color:var(--text2);margin-top:1px;letter-spacing:.5px}
+  .canvas-area{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;position:relative}
+  .canvas-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+  canvas{display:block}
+  .empty-state{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--text2);text-align:center}
+  .empty-icon{font-size:44px;opacity:.3}
+  .empty-state p{font-size:13px;max-width:220px;line-height:1.6}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:9px;font-size:12px;font-weight:500;transform:translateY(60px);opacity:0;transition:all .3s;z-index:999;font-family:'Space Mono',monospace}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.ok{border-left:3px solid #00b894}
+  .toast.err{border-left:3px solid #ff6b9d}
+  .jbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text2);max-height:150px;overflow:auto;line-height:1.5;white-space:pre}
+  input[type=text],textarea{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:'Space Mono',monospace;font-size:11px;width:100%;outline:none;resize:none}
+  input[type=text]:focus,textarea:focus{border-color:var(--accent)}
+  input[type=password]{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:'Space Mono',monospace;font-size:11px;width:100%;outline:none}
+  input[type=password]:focus{border-color:var(--accent)}
+  .divider{height:1px;background:var(--border)}
+  .ok-box{font-size:11px;color:#00b894;padding:7px 10px;background:rgba(0,184,148,.08);border-radius:7px;border:1px solid rgba(0,184,148,.2)}
+  .warn-box{font-size:11px;color:#ff6b9d;padding:7px 10px;background:rgba(255,107,157,.08);border-radius:7px;border:1px solid rgba(255,107,157,.2)}
+  .info-box{font-size:11px;color:var(--text2);padding:8px 10px;background:rgba(124,106,255,.08);border-radius:7px;border:1px solid rgba(124,106,255,.2);line-height:1.5}
+
+  /* Scheme cards */
+  .scheme-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .scheme-card{border-radius:7px;border:1.5px solid var(--border);padding:7px;cursor:pointer;transition:all .15s}
+  .scheme-card:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
+  .scheme-card.active{border-color:var(--accent);background:rgba(124,106,255,.12)}
+  .scheme-dots{display:flex;gap:3px;margin-bottom:3px}
+  .sdot{width:11px;height:11px;border-radius:3px}
+  .scheme-name{font-size:9px;color:var(--text2);font-family:'Space Mono',monospace}
+
+  /* Custom color picker */
+  .cpick-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .cpick-cell{height:24px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all .12s;position:relative}
+  .cpick-cell:hover{transform:scale(1.12)}
+  .cpick-cell.sel{border-color:#fff;transform:scale(1.08)}
+  .cpick-cell.sel::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:rgba(0,0,0,.7)}
+  .cpick-num{position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:6px;font-weight:700;color:rgba(0,0,0,.5);font-family:'Space Mono',monospace}
+
+  /* AI generation */
+  .ai-section{background:rgba(124,106,255,.06);border:1px solid rgba(124,106,255,.2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .ai-label{font-size:11px;font-weight:700;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px}
+  .ai-status{font-size:10px;color:var(--text2);font-family:'Space Mono',monospace;min-height:14px}
+  .ai-img-wrap{display:none;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+  .ai-img-wrap img{width:100%;display:block}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(124,106,255,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Loading overlay on canvas */
+  .canvas-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,13,20,.7);z-index:10;flex-direction:column;gap:12px;font-size:13px;color:var(--text2)}
+  .big-spinner{width:40px;height:40px;border:3px solid rgba(124,106,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">ARROW LEVEL EDITOR</div>
+    <div class="steps-nav">
+      <button class="step-btn active" id="sBtn1" onclick="goStep(1)">00 AI / ЗАГРУЗКА</button>
+      <button class="step-btn" id="sBtn2" onclick="goStep(2)">01 ГРИД</button>
+      <button class="step-btn" id="sBtn3" onclick="goStep(3)">02 СТРЕЛКИ</button>
+      <button class="step-btn" id="sBtn4" onclick="goStep(4)">03 ЭКСПОРТ</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+
+    <!-- STEP 1: AI + Upload -->
+    <div class="panel show" id="p1">
+
+      <div class="ai-section">
+        <div class="ai-label">✦ AI ГЕНЕРАТОР</div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label>API ключ Replicate</label></div>
+          <input type="password" id="apiKey" placeholder="r8_..." autocomplete="off">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label>Что нарисовать?</label></div>
+          <textarea id="aiPromptRu" rows="2" placeholder="пистолет, акула, петух..."></textarea>
+        </div>
+        <button class="btn ai" onclick="generateAI()">✦ Сгенерировать AI картинку</button>
+        <div class="ai-status" id="aiStatus"></div>
+        <div class="ai-img-wrap" id="aiImgWrap">
+          <img id="aiImg" crossorigin="anonymous">
+        </div>
+        <button class="btn primary" id="useAiBtn" onclick="useAiImage()" style="display:none">Использовать эту картинку →</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="slabel">Или загрузи свою</div>
+      <div class="drop-zone" id="dropzone" onclick="document.getElementById('fi').click()">
+        <div class="drop-icon">🖼</div>
+        <div class="drop-text"><strong>Нажми или перетащи</strong>PNG, JPG, WebP</div>
+      </div>
+      <input type="file" id="fi" accept="image/*" style="display:none">
+      <img id="imgPreview">
+      <button class="btn primary" id="toStep2" onclick="goStep(2)" style="display:none">Настроить грид →</button>
+    </div>
+
+    <!-- STEP 2: Grid -->
+    <div class="panel" id="p2">
+      <div class="slabel">Настройки грида</div>
+      <div class="ctrl">
+        <div class="ctrl-head"><label>Размер (длинная сторона)</label><span class="ctrl-val" id="gsV">47</span></div>
+        <input type="range" id="gs" min="20" max="80" value="47" step="1" oninput="gsV.textContent=this.value">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><label>Порог силуэта</label><span class="ctrl-val" id="thV">128</span></div>
+        <input type="range" id="th" min="10" max="245" value="128" step="1" oninput="thV.textContent=this.value">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><label>Инвертировать маску</label><span class="ctrl-val" id="invV">Нет</span></div>
+        <input type="range" id="inv" min="0" max="1" value="0" step="1" oninput="invV.textContent=this.value=='1'?'Да':'Нет'">
+      </div>
+      <button class="btn" onclick="renderGrid(false)">Показать силуэт</button>
+      <button class="btn" onclick="renderGrid(true)">Показать цветной превью</button>
+      <div class="divider"></div>
+      <div class="sgrid" id="gridStats"></div>
+      <button class="btn primary" onclick="goStep(3)">Генерировать стрелки →</button>
+      <button class="btn" onclick="goStep(1)">← Назад</button>
+    </div>
+
+    <!-- STEP 3: Arrows + Colors -->
+    <div class="panel" id="p3">
+      <div class="slabel">Режим цвета</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <div id="modeScheme" onclick="setColorMode('scheme')" style="padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)">Схемы</div>
+        <div id="modeCustom" onclick="setColorMode('custom')" style="padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)">Свои цвета</div>
+      </div>
+
+      <!-- Scheme mode -->
+      <div id="schemeSec">
+        <div class="scheme-grid" id="schemeGrid"></div>
+        <button class="btn" style="font-size:10px;padding:6px;margin-top:2px" onclick="randomScheme()">🎲 Случайная схема</button>
+      </div>
+
+      <!-- Custom color mode -->
+      <div id="customSec" style="display:none">
+        <div class="info-box" style="margin-bottom:6px">Выбери 2-5 цветов — они разделятся по яркости картинки</div>
+        <div class="cpick-grid" id="cpickGrid"></div>
+        <div style="display:flex;gap:5px;margin-top:5px">
+          <button class="btn" style="padding:5px;font-size:10px" onclick="cpickAll()">Все</button>
+          <button class="btn" style="padding:5px;font-size:10px" onclick="cpickNone()">Очистить</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="slabel">Параметры путей</div>
+      <div class="ctrl">
+        <div class="ctrl-head"><label>Мин. длина пути</label><span class="ctrl-val" id="minLV">3</span></div>
+        <input type="range" id="minL" min="2" max="12" value="3" step="1" oninput="minLV.textContent=this.value">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><label>Макс. длина пути</label><span class="ctrl-val" id="maxLV">30</span></div>
+        <input type="range" id="maxL" min="5" max="88" value="30" step="1" oninput="maxLV.textContent=this.value">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><label>Доля змейки</label><span class="ctrl-val" id="snakeV">53%</span></div>
+        <input type="range" id="snakeR" min="0" max="100" value="53" step="1" oninput="snakeV.textContent=this.value+'%'">
+      </div>
+      <button class="btn primary" onclick="generateArrows()">Генерировать стрелки</button>
+      <button class="btn" onclick="generateArrows()">↺ Перегенерировать</button>
+      <div class="divider"></div>
+      <div class="sgrid" id="arrowStats"></div>
+      <div id="vbox"></div>
+      <button class="btn primary" onclick="goStep(4)">Экспорт →</button>
+      <button class="btn" onclick="goStep(2)">← Назад</button>
+    </div>
+
+    <!-- STEP 4: Export -->
+    <div class="panel" id="p4">
+      <div class="slabel">Экспорт уровня</div>
+      <div class="sgrid" id="exportStats"></div>
+      <div class="ctrl" style="margin-top:4px">
+        <div class="ctrl-head"><label>Имя файла</label></div>
+        <input type="text" id="fname" value="Level_new_HM">
+      </div>
+      <button class="btn success" onclick="exportPrefab()">⬇ Скачать .prefab (Unity)</button>
+      <button class="btn" style="margin-top:4px" onclick="exportJSON()">⬇ Скачать .json</button>
+      <button class="btn" onclick="copyJSON()">📋 Копировать JSON</button>
+      <div class="divider"></div>
+      <div class="slabel">Предпросмотр JSON</div>
+      <div class="jbox" id="jsonBox"></div>
+      <button class="btn" onclick="goStep(3)" style="margin-top:4px">← Назад</button>
+    </div>
+  </div>
+
+  <div class="canvas-area" id="canvasArea">
+    <div class="canvas-loading" id="canvasLoading">
+      <div class="big-spinner"></div>
+      <span id="loadingText">Генерируем AI картинку...</span>
+    </div>
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">✦</div>
+      <p>Сгенерируй картинку через AI или загрузи свою</p>
+    </div>
+    <div class="canvas-wrap" id="canvasWrap" style="display:none">
+      <canvas id="mainCanvas"></canvas>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── YOUR 14 GAME COLORS ONLY ────────────────────────────────────────────────
+const GCOLS=[
+  {hex:'#00AFFF',r:0,  g:175,b:255,u:'00AFFFFF'},
+  {hex:'#00E5FF',r:0,  g:229,b:255,u:'00E5FFFF'},
+  {hex:'#00FFC8',r:0,  g:255,b:200,u:'00FFC8FF'},
+  {hex:'#7DFF60',r:125,g:255,b:96, u:'7DFF60FF'},
+  {hex:'#FFEB3B',r:255,g:235,b:59, u:'FFEB3BFF'},
+  {hex:'#FFC300',r:255,g:195,b:0,  u:'FFC300FF'},
+  {hex:'#FF8D00',r:255,g:141,b:0,  u:'FF8D00FF'},
+  {hex:'#FF6242',r:255,g:98, b:66, u:'FF6242FF'},
+  {hex:'#FF2ECC',r:255,g:46, b:204,u:'FF2ECCFF'},
+  {hex:'#FF6CE6',r:255,g:108,b:230,u:'FF6CE6FF'},
+  {hex:'#9D4BFF',r:157,g:75, b:255,u:'9D4BFFFF'},
+  {hex:'#6A00FF',r:106,g:0,  b:255,u:'6A00FFFF'},
+  {hex:'#2149FF',r:33, g:73, b:255,u:'2149FFFF'},
+  {hex:'#B5E526',r:181,g:229,b:38, u:'B5E526FF'},
+];
+
+const SCHEMES=[
+  {name:'Океан',  colors:[12,1,2]},
+  {name:'Огонь',  colors:[11,6,4]},
+  {name:'Лес',    colors:[11,3,13]},
+  {name:'Закат',  colors:[7,5,8]},
+  {name:'Неон',   colors:[10,8,1]},
+  {name:'Тропик', colors:[3,5,1]},
+  {name:'Лава',   colors:[11,7,4]},
+  {name:'Аврора', colors:[12,10,2]},
+  {name:'Кислота',colors:[11,3,4]},
+  {name:'Космос', colors:[11,10,9]},
+  {name:'Радуга', colors:[12,6,4]},
+  {name:'Зима',   colors:[12,1,13]},
+];
+
+let imgEl=null,sil=null,arrows=[],pixelMap=null;
+let colorMode='scheme';
+let activeScheme=SCHEMES[0];
+let aiImageUrl=null;
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',2800);
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+function goStep(n){
+  if(n>1&&!imgEl){toast('Сначала загрузи или сгенерируй картинку!','err');return}
+  if(n>1&&!sil)renderGrid(false);
+  if(n===3){buildSchemeGrid();buildCpickGrid()}
+  if(n===4){if(!arrows.length)generateArrows();showExport()}
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('p'+i).classList.toggle('show',i===n);
+    const b=document.getElementById('sBtn'+i);
+    b.classList.toggle('active',i===n);
+    b.classList.toggle('done',i<n);
+  });
+  if(n===2)renderGrid(false);
+  if(n===3&&arrows.length)drawArrows();
+}
+
+// ─── COLOR MODE ───────────────────────────────────────────────────────────────
+function setColorMode(mode){
+  colorMode=mode;
+  const ms=document.getElementById('modeScheme');
+  const mc=document.getElementById('modeCustom');
+  if(mode==='scheme'){
+    ms.style.cssText='padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)';
+    ms.style.color='var(--text)';
+    mc.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
+    document.getElementById('schemeSec').style.display='';
+    document.getElementById('customSec').style.display='none';
+  } else {
+    mc.style.cssText='padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)';
+    mc.style.color='var(--text)';
+    ms.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
+    document.getElementById('schemeSec').style.display='none';
+    document.getElementById('customSec').style.display='';
+  }
+}
+
+// ─── AI GENERATION ────────────────────────────────────────────────────────────
+const STYLE_SUFFIX=', 2d flat cartoon vector art, side view, isolated on white background, clean silhouette, no background, bold outlines, game asset style, vibrant colors';
+
+function setAiStatus(msg,loading=false){
+  const el=document.getElementById('aiStatus');
+  el.innerHTML=loading?`<span class="spinner"></span>${msg}`:msg;
+}
+
+async function translatePrompt(ruText){
+  // Simple Russian → English dictionary for common subjects
+  const dict={
+    'пистолет':'pistol gun',
+    'акула':'shark',
+    'петух':'rooster chicken',
+    'заяц':'rabbit hare',
+    'кот':'cat',
+    'кошка':'cat',
+    'собака':'dog',
+    'лиса':'fox',
+    'волк':'wolf',
+    'медведь':'bear',
+    'дракон':'dragon',
+    'динозавр':'dinosaur',
+    'самолет':'airplane',
+    'машина':'car',
+    'мотоцикл':'motorcycle',
+    'корабль':'ship boat',
+    'ракета':'rocket',
+    'меч':'sword',
+    'топор':'axe',
+    'лук':'bow arrow',
+    'рыба':'fish',
+    'орел':'eagle bird',
+    'лев':'lion',
+    'тигр':'tiger',
+    'лошадь':'horse',
+    'слон':'elephant',
+    'обезьяна':'monkey',
+    'черепаха':'turtle',
+    'крокодил':'crocodile',
+    'бабочка':'butterfly',
+    'дерево':'tree',
+    'цветок':'flower',
+    'гриб':'mushroom',
+  };
+  const lower=ruText.toLowerCase().trim();
+  for(const[ru,en] of Object.entries(dict)){
+    if(lower.includes(ru))return en;
+  }
+  return ruText; // fallback — use as-is (might be english already)
+}
+
+async function generateAI(){
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){toast('Введи API ключ Replicate','err');return}
+  const ruText=document.getElementById('aiPromptRu').value.trim();
+  if(!ruText){toast('Напиши что нарисовать','err');return}
+
+  const englishBase=await translatePrompt(ruText);
+  const fullPrompt=englishBase+STYLE_SUFFIX;
+
+  setAiStatus('Отправляем запрос...', true);
+  document.getElementById('canvasLoading').style.display='flex';
+  document.getElementById('loadingText').textContent='Генерируем AI картинку...';
+  document.getElementById('canvasWrap').style.display='none';
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('aiImgWrap').style.display='none';
+  document.getElementById('useAiBtn').style.display='none';
+
+  try {
+    // Call Netlify Function (no CORS issues)
+    const FN = '/.netlify/functions/replicate';
+    const startRes=await fetch(FN,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'create',
+        apiKey:key,
+        prompt:fullPrompt,
+        negativePrompt:'photo, realistic, 3d, complex background, text, watermark, blurry, dark background',
+      })
+    });
+
+    if(!startRes.ok){
+      const txt=await startRes.text();
+      throw new Error('Ошибка '+startRes.status+': '+txt.slice(0,120));
+    }
+
+    const prediction=await startRes.json();
+    const predId=prediction.id;
+    if(!predId)throw new Error('Нет ID: '+JSON.stringify(prediction).slice(0,100));
+    setAiStatus('Рисуем... ~20-40 сек', true);
+
+    // Poll via Netlify Function
+    let result=null;
+    for(let i=0;i<90;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      const pollRes=await fetch(FN,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'poll',predictionId:predId,apiKey:key})
+      });
+      const pollData=await pollRes.json();
+      if(pollData.status==='succeeded'){result=pollData;break}
+      if(pollData.status==='failed'){throw new Error('Провалилась: '+(pollData.error||'?'))}
+      setAiStatus(`Рисуем... (${i*2}с)`, true);
+    }
+
+    if(!result||!result.output){throw new Error('Таймаут — попробуй снова')}
+
+    const imgUrl=Array.isArray(result.output)?result.output[0]:result.output;
+    aiImageUrl=imgUrl;
+
+    // Show result
+    document.getElementById('canvasLoading').style.display='none';
+    const aiImg=document.getElementById('aiImg');
+    aiImg.src=imgUrl;
+    aiImg.onload=()=>{
+      document.getElementById('aiImgWrap').style.display='block';
+      document.getElementById('useAiBtn').style.display='block';
+      setAiStatus('✓ Готово! Нажми "Использовать"');
+      toast('AI картинка готова!');
+    };
+    aiImg.onerror=()=>{
+      // CORS issue — load via proxy
+      loadAiImageViaCanvas(imgUrl);
+    };
+
+  } catch(e){
+    document.getElementById('canvasLoading').style.display='none';
+    document.getElementById('emptyState').style.display='flex';
+    setAiStatus('Ошибка: '+e.message);
+    toast('Ошибка: '+e.message,'err');
+  }
+}
+
+function loadAiImageViaCanvas(url){
+  // Try loading through a CORS proxy
+  const proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>{
+    imgEl=img;
+    document.getElementById('imgPreview').src=proxyUrl;
+    document.getElementById('imgPreview').style.display='block';
+    document.getElementById('toStep2').style.display='block';
+    document.getElementById('aiImgWrap').style.display='block';
+    document.getElementById('aiImg').src=proxyUrl;
+    document.getElementById('useAiBtn').style.display='none';
+    setAiStatus('✓ Готово! Перейди к гриду');
+    toast('AI картинка загружена!');
+  };
+  img.onerror=()=>{
+    setAiStatus('⚠ Загрузи картинку вручную из URL выше');
+    // Show URL for manual download
+    const link=document.createElement('a');
+    link.href=url;link.target='_blank';link.textContent='Открыть картинку';
+    link.style.cssText='font-size:10px;color:var(--accent3);display:block;margin-top:4px;word-break:break-all';
+    document.getElementById('aiStatus').appendChild(link);
+  };
+  img.src=proxyUrl;
+}
+
+function useAiImage(){
+  const aiImg=document.getElementById('aiImg');
+  if(!aiImg.complete||!aiImg.naturalWidth){toast('Картинка ещё не загружена','err');return}
+
+  // Draw to canvas to get image data
+  const oc=document.createElement('canvas');
+  oc.width=aiImg.naturalWidth;oc.height=aiImg.naturalHeight;
+  try {
+    oc.getContext('2d').drawImage(aiImg,0,0);
+    imgEl=aiImg;
+    document.getElementById('imgPreview').src=aiImg.src;
+    document.getElementById('imgPreview').style.display='block';
+    document.getElementById('toStep2').style.display='block';
+    toast('Картинка выбрана!');
+    goStep(2);
+  } catch(e){
+    // CORS — try proxy
+    loadAiImageViaCanvas(aiImageUrl||aiImg.src);
+  }
+}
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
+document.getElementById('fi').onchange=e=>loadFile(e.target.files[0]);
+const dz=document.getElementById('dropzone');
+dz.ondragover=e=>{e.preventDefault();dz.classList.add('drag')};
+dz.ondragleave=()=>dz.classList.remove('drag');
+dz.ondrop=e=>{e.preventDefault();dz.classList.remove('drag');loadFile(e.dataTransfer.files[0])};
+
+function loadFile(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      imgEl=img;
+      const p=document.getElementById('imgPreview');
+      p.src=ev.target.result;p.style.display='block';
+      document.getElementById('emptyState').style.display='none';
+      document.getElementById('toStep2').style.display='block';
+      toast('Картинка загружена!');
+    };
+    img.src=ev.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+// ─── GRID ─────────────────────────────────────────────────────────────────────
+function getGrid(){
+  if(!imgEl)return null;
+  const gs=+document.getElementById('gs').value;
+  const thresh=+document.getElementById('th').value;
+  const inv=document.getElementById('inv').value==='1';
+  const asp=imgEl.naturalWidth/imgEl.naturalHeight;
+  let gw,gh;
+  if(asp>=1){gw=gs;gh=Math.max(3,Math.round(gs/asp))}
+  else{gh=gs;gw=Math.max(3,Math.round(gs*asp))}
+
+  const oc=document.createElement('canvas');
+  oc.width=gw;oc.height=gh;
+  const ctx=oc.getContext('2d');
+  ctx.drawImage(imgEl,0,0,gw,gh);
+  const px=ctx.getImageData(0,0,gw,gh).data;
+
+  const corners=[px[3],px[(gw-1)*4+3],px[(gh-1)*gw*4+3],px[((gh-1)*gw+gw-1)*4+3]];
+  const transBg=corners.some(a=>a<30);
+  const c0r=px[0],c0g=px[1],c0b=px[2];
+  const lightBg=!transBg&&(c0r+c0g+c0b)/3>200;
+
+  pixelMap={};
+  const cells=new Set();
+  let minB=255,maxB=0;
+
+  for(let row=0;row<gh;row++){
+    for(let col=0;col<gw;col++){
+      const i=(row*gw+col)*4;
+      const r2=px[i],g2=px[i+1],b2=px[i+2],a2=px[i+3];
+      const bright=r2*0.299+g2*0.587+b2*0.114;
+      const uy=(gh-1)-row;
+      pixelMap[col+'_'+uy]={r:r2,g:g2,b:b2,bright};
+      let inside;
+      if(transBg)inside=a2>30;
+      else if(lightBg)inside=inv?(bright>200):(bright<255-thresh+10);
+      else inside=inv?(bright<thresh):(bright>thresh);
+      if(inside){
+        cells.add(col+'_'+uy);
+        if(bright<minB)minB=bright;
+        if(bright>maxB)maxB=bright;
+      }
+    }
+  }
+  sil={cells,gw,gh,minB,maxB};
+  return sil;
+}
+
+function renderGrid(colorPreview){
+  const res=getGrid();if(!res)return;
+  const{cells,gw,gh}=res;
+  const area=document.getElementById('canvasArea');
+  const maxW=area.clientWidth-40,maxH=area.clientHeight-40;
+  const cell=Math.max(4,Math.min(18,Math.floor(Math.min(maxW/gw,maxH/gh))));
+  const cv=document.getElementById('mainCanvas');
+  cv.width=gw*cell;cv.height=gh*cell;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,cv.width,cv.height);
+  cells.forEach(k=>{
+    const[x,y]=k.split('_').map(Number),sy=(gh-1-y)*cell;
+    if(colorPreview){
+      ctx.fillStyle=getZoneColor(k).hex;
+      ctx.fillRect(x*cell,sy,cell,cell);
+    } else {
+      ctx.fillStyle='#1e1e3a';ctx.fillRect(x*cell,sy,cell,cell);
+      ctx.fillStyle='#4a5aff';ctx.fillRect(x*cell+1,sy+1,cell-2,cell-2);
+    }
+  });
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('canvasWrap').style.display='block';
+  const fill=Math.round(100*cells.size/(gw*gh));
+  document.getElementById('gridStats').innerHTML=`
+    <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
+    <div class="sc"><div class="val">${cells.size}</div><div class="lbl">ЯЧЕЕК</div></div>
+    <div class="sc"><div class="val">${fill}%</div><div class="lbl">ЗАПОЛНЕНИЕ</div></div>
+    <div class="sc"><div class="val">${cell}px</div><div class="lbl">ЯЧЕЙКА</div></div>`;
+  toast(colorPreview?'Цветной превью':'Силуэт готов');
+}
+
+// ─── ZONE COLOR ───────────────────────────────────────────────────────────────
+function getActivePalette(){
+  if(colorMode==='scheme'){
+    return activeScheme.colors.map(i=>GCOLS[i]);
+  } else {
+    const sel=[];
+    document.querySelectorAll('.cpick-cell.sel').forEach((el,i)=>{
+      if(el.dataset.idx!==undefined)sel.push(GCOLS[+el.dataset.idx]);
+    });
+    return sel.length>=2?sel:activeScheme.colors.map(i=>GCOLS[i]);
+  }
+}
+
+function getZoneColor(cellKey){
+  if(!pixelMap||!sil)return GCOLS[0];
+  const pm=pixelMap[cellKey];
+  if(!pm)return GCOLS[0];
+  const pal=getActivePalette();
+  const range=Math.max(1,sil.maxB-sil.minB);
+  const norm=(pm.bright-sil.minB)/range;
+  const idx=Math.min(pal.length-1,Math.floor(norm*pal.length));
+  return pal[idx];
+}
+
+function getPathColor(path){
+  if(!pixelMap||!path.length)return GCOLS[0];
+  let tot=0,cnt=0;
+  path.forEach(([x,y])=>{const pm=pixelMap[x+'_'+y];if(pm){tot+=pm.bright;cnt++}});
+  if(!cnt)return GCOLS[0];
+  const pal=getActivePalette();
+  const range=Math.max(1,sil.maxB-sil.minB);
+  const norm=(tot/cnt-sil.minB)/range;
+  const idx=Math.min(pal.length-1,Math.floor(norm*pal.length));
+  return pal[idx];
+}
+
+// ─── SCHEME UI ────────────────────────────────────────────────────────────────
+function buildSchemeGrid(){
+  const g=document.getElementById('schemeGrid');g.innerHTML='';
+  SCHEMES.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='scheme-card'+(s===activeScheme?' active':'');
+    const dots=s.colors.map(ci=>`<div class="sdot" style="background:${GCOLS[ci].hex}"></div>`).join('');
+    d.innerHTML=`<div class="scheme-dots">${dots}</div><div class="scheme-name">${s.name}</div>`;
+    d.onclick=()=>{
+      activeScheme=s;
+      document.querySelectorAll('.scheme-card').forEach(c=>c.classList.remove('active'));
+      d.classList.add('active');
+      if(arrows.length)drawArrows();
+    };
+    g.appendChild(d);
+  });
+}
+
+function randomScheme(){
+  const idx=[...Array(14).keys()];
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
+  activeScheme={name:'Рандом',colors:[idx[0],idx[1],idx[2]]};
+  buildSchemeGrid();
+  if(arrows.length)drawArrows();
+  toast('Новая схема!');
+}
+
+function buildCpickGrid(){
+  const g=document.getElementById('cpickGrid');g.innerHTML='';
+  GCOLS.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='cpick-cell';
+    d.dataset.idx=i;
+    d.style.background=c.hex;
+    d.innerHTML=`<span class="cpick-num">${i}</span>`;
+    d.onclick=()=>{
+      d.classList.toggle('sel');
+      if(arrows.length)drawArrows();
+    };
+    g.appendChild(d);
+  });
+}
+
+function cpickAll(){document.querySelectorAll('.cpick-cell').forEach(d=>{d.classList.add('sel')});if(arrows.length)drawArrows()}
+function cpickNone(){document.querySelectorAll('.cpick-cell').forEach(d=>{d.classList.remove('sel')})}
+
+// ─── PATH BUILDERS ────────────────────────────────────────────────────────────
+function sampleLen(mn,mx){
+  const r=Math.random();
+  let l;
+  if(r<0.62)l=mn+Math.floor(Math.random()*Math.max(1,9-mn));
+  else if(r<0.87)l=9+Math.floor(Math.random()*8);
+  else if(r<0.94)l=17+Math.floor(Math.random()*14);
+  else l=31+Math.floor(Math.random()*20);
+  return Math.max(mn,Math.min(mx,l));
+}
+
+function trySnake(sx,sy,len,cells,used,gw,gh){
+  let path=[[sx,sy]],hd=Math.random()<.5?1:-1,vd=Math.random()<.5?1:-1;
+  while(path.length<len){
+    const[cx,cy]=path[path.length-1];
+    const nk=(cx+hd)+'_'+cy;
+    if(cells.has(nk)&&!used.has(nk)&&cx+hd>=0&&cx+hd<gw){path.push([cx+hd,cy]);continue}
+    const vk=cx+'_'+(cy+vd);
+    if(cells.has(vk)&&!used.has(vk)&&cy+vd>=0&&cy+vd<gh){path.push([cx,cy+vd]);hd*=-1;continue}
+    break;
+  }
+  return path.length>=2?path:null;
+}
+
+function tryStraight(sx,sy,len,cells,used,gw,gh){
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]].sort(()=>Math.random()-.5);
+  let best=null;
+  for(const d of dirs){
+    let p=[[sx,sy]];
+    for(let i=1;i<len;i++){
+      const[cx,cy]=p[p.length-1],nx=cx+d[0],ny=cy+d[1],nk=nx+'_'+ny;
+      if(cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh)p.push([nx,ny]);else break;
+    }
+    if(p.length>=2&&(!best||p.length>best.length))best=p;
+  }
+  return best;
+}
+
+function tryL(sx,sy,len,cells,used,gw,gh){
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  const d1=dirs[Math.floor(Math.random()*4)];
+  const perp=dirs.filter(d=>(d[0]!==d1[0]||d[1]!==d1[1])&&(d[0]!==(-d1[0])||d[1]!==(-d1[1])));
+  const d2=perp[Math.floor(Math.random()*perp.length)]||dirs[2];
+  const half=Math.max(2,Math.floor(len*.5));
+  let p=[[sx,sy]];
+  for(let i=0;i<half;i++){
+    const[cx,cy]=p[p.length-1],nx=cx+d1[0],ny=cy+d1[1],nk=nx+'_'+ny;
+    if(cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh)p.push([nx,ny]);else break;
+  }
+  for(let i=0;i<len-half;i++){
+    const[cx,cy]=p[p.length-1],nx=cx+d2[0],ny=cy+d2[1],nk=nx+'_'+ny;
+    if(cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh)p.push([nx,ny]);else break;
+  }
+  return p.length>=2?p:null;
+}
+
+function buildPath(sx,sy,len,cells,used,gw,gh){
+  const sp=+document.getElementById('snakeR').value/100;
+  const r=Math.random();
+  let p;
+  if(r<sp)p=trySnake(sx,sy,len,cells,used,gw,gh);
+  else if(r<sp+.12)p=tryL(sx,sy,len,cells,used,gw,gh);
+  else p=tryStraight(sx,sy,len,cells,used,gw,gh);
+  if(!p)p=trySnake(sx,sy,len,cells,used,gw,gh);
+  if(!p)p=tryStraight(sx,sy,len,cells,used,gw,gh);
+  if(!p)p=tryL(sx,sy,len,cells,used,gw,gh);
+  return p||[];
+}
+
+// ─── GENERATE ARROWS ─────────────────────────────────────────────────────────
+function generateArrows(){
+  if(!sil){renderGrid(false);return}
+  const{cells,gw,gh}=sil;
+  const mn=+document.getElementById('minL').value;
+  const mx=+document.getElementById('maxL').value;
+  const unassigned=new Set(cells),used=new Set();
+  arrows=[];let iters=0;
+
+  while(unassigned.size>0&&iters++<cells.size*6){
+    let sk=null,bY=-1,bX=9999;
+    for(const k of unassigned){
+      const[kx,ky]=k.split('_').map(Number);
+      if(ky>bY||(ky===bY&&kx<bX)){bY=ky;bX=kx;sk=k}
+    }
+    if(!sk)break;
+    const[sx,sy]=sk.split('_').map(Number);
+    const rem=unassigned.size;
+    const tlen=rem<=mn?rem:Math.min(sampleLen(mn,mx),rem);
+    const path=buildPath(sx,sy,tlen,cells,used,gw,gh);
+    let valid=[];
+    for(const[px,py] of path){
+      const k=px+'_'+py;
+      if(unassigned.has(k)){valid.push([px,py]);unassigned.delete(k);used.add(k)}
+      else break;
+    }
+    if(valid.length===1){
+      const[ox,oy]=valid[0];
+      let ext=false;
+      for(const[dx,dy] of[[1,0],[-1,0],[0,1],[0,-1]]){
+        const nk=(ox+dx)+'_'+(oy+dy);
+        if(unassigned.has(nk)){valid.push([ox+dx,oy+dy]);unassigned.delete(nk);used.add(nk);ext=true;break}
+      }
+      if(!ext&&rem>1){
+        let merged=false;
+        for(const a of arrows){
+          const[lx,ly]=a._path[a._path.length-1];
+          if(Math.abs(lx-ox)+Math.abs(ly-oy)===1){a._path.push([ox,oy]);a.Indices.push(oy*gw+ox);merged=true;break}
+        }
+        if(!merged)valid=[valid[0]];
+      }
+    }
+    if(valid.length>0){
+      const col=getPathColor(valid);
+      arrows.push({Indices:valid.map(([px,py])=>py*gw+px),color:col.u,_hex:col.hex,_path:valid});
+    }
+  }
+  for(const k of unassigned){
+    const[px,py]=k.split('_').map(Number);
+    let merged=false;
+    for(const a of arrows){
+      const[lx,ly]=a._path[a._path.length-1];
+      if(Math.abs(lx-px)+Math.abs(ly-py)===1){a._path.push([px,py]);a.Indices.push(py*gw+px);merged=true;break}
+    }
+    if(!merged){const col=getPathColor([[px,py]]);arrows.push({Indices:[py*gw+px],color:col.u,_hex:col.hex,_path:[[px,py]]})}
+  }
+
+  const seen=new Map();let ov=0;
+  arrows.forEach((a,i)=>a.Indices.forEach(idx=>{if(seen.has(idx))ov++;else seen.set(idx,i)}));
+  const sing=arrows.filter(a=>a.Indices.length===1).length;
+  const total=arrows.reduce((s,a)=>s+a.Indices.length,0);
+  const avg=(total/arrows.length).toFixed(1);
+  document.getElementById('arrowStats').innerHTML=`
+    <div class="sc"><div class="val">${arrows.length}</div><div class="lbl">СТРЕЛОК</div></div>
+    <div class="sc"><div class="val">${total}</div><div class="lbl">ЯЧЕЕК</div></div>
+    <div class="sc"><div class="val">${avg}</div><div class="lbl">СРЕДН. ПУТЬ</div></div>
+    <div class="sc"><div class="val">${ov}</div><div class="lbl">ПЕРЕКРЫТИЙ</div></div>`;
+  document.getElementById('vbox').innerHTML=ov===0&&sing===0
+    ?'<div class="ok-box">✓ Валидация пройдена!</div>'
+    :`<div class="warn-box">⚠ Перекрытий: ${ov} • Одиночных: ${sing}</div>`;
+  drawArrows();
+  toast(`${arrows.length} стрелок сгенерировано`);
+}
+
+function drawArrows(){
+  const{gw,gh}=sil;
+  const area=document.getElementById('canvasArea');
+  const maxW=area.clientWidth-40,maxH=area.clientHeight-40;
+  const cell=Math.max(4,Math.min(18,Math.floor(Math.min(maxW/gw,maxH/gh))));
+  const cv=document.getElementById('mainCanvas');
+  cv.width=gw*cell;cv.height=gh*cell;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,cv.width,cv.height);
+  arrows.forEach(arrow=>{
+    const pts=arrow._path,col=arrow._hex||'#00E5FF';
+    if(!pts||!pts.length)return;
+    if(pts.length===1){
+      const[px,py]=pts[0];
+      ctx.fillStyle=col;ctx.beginPath();
+      ctx.arc(px*cell+cell/2,(gh-1-py)*cell+cell/2,cell*.3,0,Math.PI*2);ctx.fill();
+      return;
+    }
+    ctx.strokeStyle=col;ctx.lineWidth=Math.max(1.5,cell*.4);
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    pts.forEach(([px,py],i)=>{
+      const x2=px*cell+cell/2,y2=(gh-1-py)*cell+cell/2;
+      i===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2);
+    });
+    ctx.stroke();
+    const[lx,ly]=pts[pts.length-1],[px2,py2]=pts[pts.length-2];
+    const ex=lx*cell+cell/2,ey=(gh-1-ly)*cell+cell/2;
+    const fx=px2*cell+cell/2,fy=(gh-1-py2)*cell+cell/2;
+    const ang=Math.atan2(ey-fy,ex-fx),as=Math.max(4,cell*.5);
+    ctx.fillStyle=col;ctx.beginPath();
+    ctx.moveTo(ex+Math.cos(ang)*as,ey+Math.sin(ang)*as);
+    ctx.lineTo(ex+Math.cos(ang+2.5)*as*.55,ey+Math.sin(ang+2.5)*as*.55);
+    ctx.lineTo(ex+Math.cos(ang-2.5)*as*.55,ey+Math.sin(ang-2.5)*as*.55);
+    ctx.closePath();ctx.fill();
+  });
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('canvasWrap').style.display='block';
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────────────────────
+function buildLevel(){
+  const{gw,gh}=sil;
+  return{XSize:gw,YSize:gh,Arrows:arrows.map(a=>({Indices:a.Indices,color:a.color,isCollected:false,isClicked:false}))};
+}
+
+function showExport(){
+  if(!sil||!arrows.length)return;
+  const level=buildLevel();
+  const{gw,gh}=sil;
+  const sing=arrows.filter(a=>a.Indices.length===1).length;
+  document.getElementById('exportStats').innerHTML=`
+    <div class="sc"><div class="val">${arrows.length}</div><div class="lbl">СТРЕЛОК</div></div>
+    <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
+    <div class="sc"><div class="val">${arrows.reduce((s,a)=>s+a.Indices.length,0)}</div><div class="lbl">ЯЧЕЕК</div></div>
+    <div class="sc"><div class="val">${sing===0?'✓':'⚠'+sing}</div><div class="lbl">ОДИНОЧНЫХ</div></div>`;
+  const js=JSON.stringify(level,null,2);
+  document.getElementById('jsonBox').textContent=js.length>800?js.slice(0,800)+'\n...':js;
+}
+
+function buildPrefab(level,name){
+  const s=JSON.stringify(level).replace(/'/g,"''");
+  return `%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!1001 &6658644906848311588\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {fileID: 0}\n    m_Modifications:\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalPosition.x\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalPosition.y\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalPosition.z\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.w\n      value: 1\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.x\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.y\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.z\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalEulerAnglesHint.x\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalEulerAnglesHint.y\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalEulerAnglesHint.z\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 6007291936790831287, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: jsonString\n      value: '${s}'\n      objectReference: {fileID: 0}\n    - target: {fileID: 8552869564571161296, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_Name\n      value: ${name}\n      objectReference: {fileID: 0}\n    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n  m_SourcePrefab: {fileID: 100100000, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}\n`;
+}
+
+function dl(content,filename,mime){
+  const blob=new Blob([content],{type:mime});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(a.href);
+}
+function exportPrefab(){
+  const name=(document.getElementById('fname').value||'Level_new_HM').replace(/\.(prefab|json)$/,'');
+  dl(buildPrefab(buildLevel(),name),name+'.prefab','text/plain');
+  toast('✓ '+name+'.prefab скачан');
+}
+function exportJSON(){
+  const name=(document.getElementById('fname').value||'Level_new_HM').replace(/\.(prefab|json)$/,'');
+  dl(JSON.stringify(buildLevel(),null,2),name+'.json','application/json');
+  toast('✓ '+name+'.json скачан');
+}
+function copyJSON(){
+  navigator.clipboard.writeText(JSON.stringify(buildLevel()))
+    .then(()=>toast('✓ JSON скопирован!'))
+    .catch(()=>toast('Ошибка','err'));
+}
+</script>
+</body>
+</html>
