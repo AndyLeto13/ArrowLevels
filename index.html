@@ -2,339 +2,1177 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arrow Level Editor</title>
+<title>Arrow Studio (alpha)</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
-  :root{
-    --bg:#0d0d14;--bg2:#13131f;--bg3:#1a1a2e;
-    --accent:#7c6aff;--accent2:#ff6b9d;--accent3:#00e5ff;
-    --text:#f0f0f8;--text2:#8888aa;--border:rgba(255,255,255,0.08)
+  :root {
+    --bg: #0a0a14;
+    --bg2: #14141f;
+    --bg3: #1c1c2e;
+    --border: #2a2a40;
+    --text: #e6e6fa;
+    --text2: #8a8aab;
+    --text3: #5a5a7a;
+    --accent: #7c6aff;
+    --accent2: #ff6b9d;
+    --accent3: #00ffc8;
+    --warn: #ffeb3b;
+    --err: #ff6242;
+    --ok: #00ffc8;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
-  .app{display:grid;grid-template-columns:300px 1fr;grid-template-rows:60px 1fr;height:100vh}
-  .header{grid-column:1/-1;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px}
-  .logo{font-size:17px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(135deg,#7c6aff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .steps-nav{display:flex;gap:4px;margin-left:auto}
-  .step-btn{padding:5px 12px;border-radius:20px;font-size:10px;font-weight:600;font-family:'Space Mono',monospace;border:1px solid var(--border);cursor:pointer;background:transparent;color:var(--text2);transition:all .2s}
-  .step-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
-  .step-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .step-btn.done{color:var(--accent3);border-color:rgba(0,229,255,.3)}
-  .sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px}
-  .sidebar::-webkit-scrollbar{width:3px}
-  .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  .panel{display:none;flex-direction:column;gap:11px}
-  .panel.show{display:flex}
-  .slabel{font-size:9px;font-weight:600;letter-spacing:2px;color:var(--text2);text-transform:uppercase;font-family:'Space Mono',monospace}
-  .drop-zone{border:1.5px dashed rgba(124,106,255,.4);border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(124,106,255,.04)}
-  .drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(124,106,255,.1)}
-  .drop-icon{font-size:24px;margin-bottom:6px}
-  .drop-text{font-size:11px;color:var(--text2);line-height:1.5}
-  .drop-text strong{color:var(--text);font-weight:600;display:block;margin-bottom:2px}
-  #imgPreview{width:100%;border-radius:8px;display:none;border:1px solid var(--border);margin-top:6px}
-  .ctrl{display:flex;flex-direction:column;gap:5px}
-  .ctrl-head{display:flex;justify-content:space-between;align-items:center}
-  .ctrl-head label{font-size:11px;color:var(--text2)}
-  .ctrl-val{font-size:11px;font-weight:700;font-family:'Space Mono',monospace;color:var(--accent);background:rgba(124,106,255,.12);padding:1px 6px;border-radius:4px}
-  input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.1);outline:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer}
-  .btn{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif;border:1px solid var(--border);cursor:pointer;background:rgba(255,255,255,.04);color:var(--text);transition:all .15s;width:100%}
-  .btn:hover{background:rgba(255,255,255,.08)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{opacity:.88}
-  .btn.success{background:linear-gradient(135deg,#00b894,#00cec9);border:none;color:#fff}
-  .btn.ai{background:linear-gradient(135deg,#7c6aff,#ff6b9d);border:none;color:#fff;font-size:13px;padding:10px}
-  .btn.ai:hover{opacity:.88}
-  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .sc{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
-  .sc .val{font-size:17px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace}
-  .sc .lbl{font-size:9px;color:var(--text2);margin-top:1px;letter-spacing:.5px}
-  .canvas-area{background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;position:relative}
-  .canvas-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-  canvas{display:block}
-  .empty-state{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--text2);text-align:center}
-  .empty-icon{font-size:44px;opacity:.3}
-  .empty-state p{font-size:13px;max-width:220px;line-height:1.6}
-  .toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:9px;font-size:12px;font-weight:500;transform:translateY(60px);opacity:0;transition:all .3s;z-index:999;font-family:'Space Mono',monospace}
-  .toast.show{transform:translateY(0);opacity:1}
-  .toast.ok{border-left:3px solid #00b894}
-  .toast.err{border-left:3px solid #ff6b9d}
-  .jbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text2);max-height:150px;overflow:auto;line-height:1.5;white-space:pre}
-  input[type=text],textarea{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:'Space Mono',monospace;font-size:11px;width:100%;outline:none;resize:none}
-  input[type=text]:focus,textarea:focus{border-color:var(--accent)}
-  input[type=password]{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-family:'Space Mono',monospace;font-size:11px;width:100%;outline:none}
-  input[type=password]:focus{border-color:var(--accent)}
-  .divider{height:1px;background:var(--border)}
-  .ok-box{font-size:11px;color:#00b894;padding:7px 10px;background:rgba(0,184,148,.08);border-radius:7px;border:1px solid rgba(0,184,148,.2)}
-  .warn-box{font-size:11px;color:#ff6b9d;padding:7px 10px;background:rgba(255,107,157,.08);border-radius:7px;border:1px solid rgba(255,107,157,.2)}
-  .info-box{font-size:11px;color:var(--text2);padding:8px 10px;background:rgba(124,106,255,.08);border-radius:7px;border:1px solid rgba(124,106,255,.2);line-height:1.5}
-
-  /* ── DIFFICULTY BUTTONS ── */
-  .diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
-  .diff-btn{
-    padding:10px 6px;border-radius:9px;border:1.5px solid var(--border);
-    cursor:pointer;text-align:center;font-size:11px;font-weight:700;
-    color:var(--text2);transition:all .15s;font-family:'Space Mono',monospace;
-    line-height:1.3;
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", monospace, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
   }
-  .diff-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
-  .diff-btn.active{color:#fff}
-  #diff_easy.active   {border-color:#00FFC8;background:rgba(0,255,200,.15);color:#00FFC8}
-  #diff_medium.active {border-color:#FFEB3B;background:rgba(255,235,59,.15);color:#FFEB3B}
-  #diff_hard.active   {border-color:#FF8D00;background:rgba(255,141,0,.15);color:#FF8D00}
-  #diff_super_hard.active{border-color:#FF2ECC;background:rgba(255,46,204,.15);color:#FF2ECC}
-  .diff-info{font-size:10px;padding:7px 9px;border-radius:7px;line-height:1.6;border:1px solid;margin-top:2px}
+  .top {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg2);
+  }
+  .top h1 {
+    margin: 0; font-size: 18px; font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+  }
+  .top .v { color: var(--text3); font-size: 11px; font-family: monospace; }
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+  }
+  .panel h2 .step {
+    display: inline-block;
+    width: 22px; height: 22px;
+    line-height: 22px; text-align: center;
+    background: var(--accent);
+    color: #fff; border-radius: 50%;
+    margin-right: 8px; font-size: 11px;
+    vertical-align: middle;
+  }
 
-  /* ── GRID SIZE IMPACT BADGE ── */
-  .grid-badge{font-size:9px;font-family:'Space Mono',monospace;padding:3px 7px;border-radius:5px;display:inline-block;margin-top:3px}
+  /* Step 1 — image */
+  .img-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .img-presets { display: flex; gap: 8px; flex-wrap: wrap; }
+  .preset-btn {
+    padding: 8px 14px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3); color: var(--text);
+    cursor: pointer; font-size: 12px;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--accent); background: rgba(124,106,255,0.1); }
+  #fileInput { display: none; }
+  .file-btn {
+    padding: 8px 14px; border-radius: 8px;
+    border: 1px dashed var(--accent);
+    background: rgba(124,106,255,0.08); color: var(--accent);
+    cursor: pointer; font-size: 12px;
+  }
+  .img-preview {
+    max-width: 120px; max-height: 120px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  .img-info { font-size: 11px; color: var(--text2); }
 
-  /* Scheme cards */
-  .scheme-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-  .scheme-card{border-radius:7px;border:1.5px solid var(--border);padding:7px;cursor:pointer;transition:all .15s}
-  .scheme-card:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
-  .scheme-card.active{border-color:var(--accent);background:rgba(124,106,255,.12)}
-  .scheme-dots{display:flex;gap:3px;margin-bottom:3px}
-  .sdot{width:11px;height:11px;border-radius:3px}
-  .scheme-name{font-size:9px;color:var(--text2);font-family:'Space Mono',monospace}
+  /* Step 2 — bucket */
+  .bucket-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 600px; }
+  .b-btn {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+  .b-btn:hover { transform: translateY(-1px); }
+  .b-btn.active {
+    border-width: 2px;
+    padding: 11px;
+  }
+  .b-btn[data-b="easy"].active { border-color: #00ffc8; background: rgba(0,255,200,0.1); color: #00ffc8; }
+  .b-btn[data-b="medium"].active { border-color: #ffeb3b; background: rgba(255,235,59,0.1); color: #ffeb3b; }
+  .b-btn[data-b="hard"].active { border-color: #ff8d00; background: rgba(255,141,0,0.1); color: #ff8d00; }
+  .b-btn[data-b="superhard"].active { border-color: #ff2ecc; background: rgba(255,46,204,0.1); color: #ff2ecc; }
+  .b-btn .label { font-size: 13px; font-weight: 700; }
+  .b-btn .range { font-size: 9px; color: var(--text3); margin-top: 4px; font-family: monospace; }
 
-  /* Custom color picker */
-  .cpick-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-  .cpick-cell{height:24px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all .12s;position:relative}
-  .cpick-cell:hover{transform:scale(1.12)}
-  .cpick-cell.sel{border-color:#fff;transform:scale(1.08)}
-  .cpick-cell.sel::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:rgba(0,0,0,.7)}
+  /* Step 3 — Generate */
+  .gen-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .gen-btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px; font-weight: 700;
+    transition: all 0.15s;
+    letter-spacing: 1px;
+  }
+  .gen-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,106,255,0.4); }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .gen-btn.cancel {
+    background: var(--err);
+  }
+  .count-input {
+    width: 60px; padding: 8px;
+    background: var(--bg3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; text-align: center;
+  }
+  .gen-status {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--bg3);
+    font-size: 12px;
+    font-family: monospace;
+    color: var(--text2);
+    min-height: 20px;
+    border: 1px solid var(--border);
+  }
+  .gen-status.active { border-color: var(--accent); }
 
-  /* AI section */
-  .ai-section{background:rgba(124,106,255,.06);border:1px solid rgba(124,106,255,.2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
-  .ai-label{font-size:11px;font-weight:700;color:var(--accent);font-family:'Space Mono',monospace;letter-spacing:1px}
-  .ai-status{font-size:10px;color:var(--text2);font-family:'Space Mono',monospace;min-height:14px}
-  .ai-img-wrap{display:none;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
-  .ai-img-wrap img{width:100%;display:block}
-  .spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(124,106,255,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .canvas-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,13,20,.7);z-index:10;flex-direction:column;gap:12px;font-size:13px;color:var(--text2)}
-  .big-spinner{width:40px;height:40px;border:3px solid rgba(124,106,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  /* Live log */
+  .log {
+    margin-top: 8px;
+    padding: 10px;
+    max-height: 160px; overflow-y: auto;
+    font-family: monospace; font-size: 11px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .log-line { padding: 2px 0; }
+  .log-line.info { color: var(--text2); }
+  .log-line.ok { color: var(--ok); }
+  .log-line.warn { color: var(--warn); }
+  .log-line.err { color: var(--err); }
+
+  /* Cards grid */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pop-in {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .card.selected { border: 2px solid var(--accent); padding: 11px; box-shadow: 0 0 0 4px rgba(124,106,255,0.15); }
+  .card.failed {
+    background: var(--bg);
+    border-color: rgba(255,98,66,0.3);
+    opacity: 0.6;
+    cursor: default;
+  }
+  .card.failed:hover { transform: none; }
+  .card .preview {
+    width: 100%; aspect-ratio: 1; background: var(--bg);
+    border-radius: 8px; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .card .preview canvas {
+    max-width: 100%; max-height: 100%;
+  }
+  .card .head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .card .size { font-size: 14px; font-weight: 700; }
+  .card .badge {
+    font-size: 9px; padding: 2px 6px; border-radius: 4px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text2);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .card .badge.easy { color: #00ffc8; border-color: rgba(0,255,200,0.3); }
+  .card .badge.medium { color: #ffeb3b; border-color: rgba(255,235,59,0.3); }
+  .card .badge.hard { color: #ff8d00; border-color: rgba(255,141,0,0.3); }
+  .card .badge.superhard { color: #ff2ecc; border-color: rgba(255,46,204,0.3); }
+  .card .stats {
+    font-size: 10px; color: var(--text2); font-family: monospace;
+    line-height: 1.4;
+  }
+  .card .stats b { color: var(--text); }
+  .card .err-msg {
+    color: var(--err); font-size: 11px; margin-top: 8px;
+    text-align: center;
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+  .empty .big { font-size: 36px; margin-bottom: 8px; }
+
+  /* Status pill */
+  .pill {
+    display: inline-block; padding: 4px 8px;
+    border-radius: 12px; font-size: 10px; font-weight: 600;
+    background: var(--bg3); color: var(--text2);
+    margin-left: 6px;
+  }
+  .pill.live { background: rgba(0,255,200,0.15); color: var(--ok); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* Progress bar */
+  .pbar {
+    margin-top: 8px;
+    height: 6px; border-radius: 3px;
+    background: var(--bg);
+    overflow: hidden;
+    position: relative;
+  }
+  .pbar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transition: width 0.4s ease;
+    border-radius: 3px;
+  }
+
+  /* Detail / Editor view */
+  .detail {
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+    display: none;
+  }
+  .detail.show { display: block; }
+  .editor-wrap { display: flex; flex-direction: column; gap: 12px; }
+  
+  .editor-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    flex-wrap: wrap;
+  }
+  .tool-group { display: flex; gap: 4px; }
+  .tool-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+  .tool-btn {
+    padding: 8px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tool-btn:hover { background: var(--bg); border-color: var(--accent); }
+  .tool-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(124,106,255,0.5);
+  }
+  .tool-select {
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .editor-hint {
+    padding: 8px 14px;
+    background: rgba(124,106,255,0.08);
+    border: 1px solid rgba(124,106,255,0.2);
+    border-radius: 7px;
+    color: var(--text2);
+    font-size: 12px;
+  }
+  .editor-canvas-wrap {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--bg);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    cursor: crosshair;
+    position: relative;
+  }
+  .editor-canvas-wrap canvas { display: block; max-width: 100%; max-height: 100%; image-rendering: crisp-edges; }
+  .editor-stats {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 11px; line-height: 1.6;
+    padding: 12px 14px;
+    background: var(--bg3);
+    border-radius: 8px;
+    color: var(--text2);
+  }
+  .editor-stats b { color: var(--text); }
+  .editor-stats .ok { color: var(--ok); }
+  .editor-stats .err { color: var(--err); }
+  
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .export-name {
+    flex: 1; min-width: 180px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+  .action-btn {
+    padding: 10px 18px;
+    border-radius: 8px; border: none;
+    cursor: pointer; font-weight: 600; font-size: 12px;
+    white-space: nowrap;
+  }
+  .action-btn.primary {
+    background: linear-gradient(135deg, #00b894, #00cec9);
+    color: #fff;
+  }
+  .action-btn.secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  
+  /* Toast for editor messages */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 8px;
+    background: var(--bg3); color: var(--text);
+    border: 1px solid var(--accent);
+    font-size: 13px; font-weight: 600;
+    z-index: 10000;
+    animation: toast-in 0.2s ease-out;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .toast.err { border-color: var(--err); }
+  .toast.ok { border-color: var(--ok); }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div class="logo">ARROW LEVEL EDITOR</div>
-    <div class="steps-nav">
-      <button class="step-btn active" id="sBtn1" onclick="goStep(1)">00 AI / ЗАГРУЗКА</button>
-      <button class="step-btn" id="sBtn2" onclick="goStep(2)">01 ГРИД</button>
-      <button class="step-btn" id="sBtn3" onclick="goStep(3)">02 СТРЕЛКИ</button>
-      <button class="step-btn" id="sBtn4" onclick="goStep(4)">03 ЭКСПОРТ</button>
-    </div>
-  </div>
 
-  <div class="sidebar">
-
-    <!-- STEP 1 -->
-    <div class="panel show" id="p1">
-      <div class="ai-section">
-        <div class="ai-label">✦ AI ГЕНЕРАТОР</div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>API ключ Replicate</label></div>
-          <input type="password" id="apiKey" placeholder="r8_..." autocomplete="off">
-        </div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>Что нарисовать?</label></div>
-          <textarea id="aiPromptRu" rows="2" placeholder="пистолет, акула, петух..."></textarea>
-        </div>
-        <button class="btn ai" onclick="generateAI()">✦ Сгенерировать AI картинку</button>
-        <div class="ai-status" id="aiStatus"></div>
-        <div id="logBox" style="background:#0a0a12;border-radius:6px;padding:6px 8px;max-height:100px;overflow-y:auto;margin-top:4px;display:none;font-family:'Space Mono',monospace"></div>
-        <div class="ai-img-wrap" id="aiImgWrap"><img id="aiImg" crossorigin="anonymous"></div>
-        <button class="btn primary" id="useAiBtn" onclick="useAiImage()" style="display:none">Использовать эту картинку →</button>
-      </div>
-      <div class="divider"></div>
-      <div class="slabel">Или загрузи свою</div>
-      <div class="drop-zone" id="dropzone" onclick="document.getElementById('fi').click()">
-        <div class="drop-icon">🖼</div>
-        <div class="drop-text"><strong>Нажми или перетащи</strong>PNG, JPG, WebP</div>
-      </div>
-      <input type="file" id="fi" accept="image/*" style="display:none">
-      <img id="imgPreview">
-      <button class="btn primary" id="toStep2" onclick="goStep(2)" style="display:none">Настроить грид →</button>
-    </div>
-
-    <!-- STEP 2 -->
-    <div class="panel" id="p2">
-      <div class="slabel">Настройки грида</div>
-      <div class="ctrl">
-        <div class="ctrl-head"><label>Размер (длинная сторона)</label><span class="ctrl-val" id="gsV">47</span></div>
-        <input type="range" id="gs" min="20" max="80" value="47" step="1" oninput="gsV.textContent=this.value;updateGridSizeHint()">
-      </div>
-      <!-- Grid size difficulty hint -->
-      <div id="gridSizeHint" class="info-box" style="font-size:10px"></div>
-      <div class="ctrl">
-        <div class="ctrl-head"><label>Чувствительность силуэта</label><span class="ctrl-val" id="thV">128</span></div>
-        <input type="range" id="th" min="10" max="245" value="128" step="1" oninput="thV.textContent=this.value;renderGrid(false)">
-      </div>
-      <div style="display:flex;gap:5px;margin-top:-4px">
-        <button class="btn" style="padding:5px;font-size:10px;flex:1" onclick="autoThreshold()">⚡ Авто</button>
-        <button class="btn" style="padding:5px;font-size:10px;flex:1" onclick="document.getElementById('inv').value=document.getElementById('inv').value=='1'?'0':'1';invV.textContent=document.getElementById('inv').value=='1'?'Да':'Нет';renderGrid(false)">⇄ Инверт: <span id="invV">Нет</span></button>
-        <input type="hidden" id="inv" value="0">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px">
-        <button class="btn" onclick="renderGrid(false)">Силуэт</button>
-        <button class="btn" onclick="renderGrid(true)">Цвет превью</button>
-      </div>
-      <div class="divider"></div>
-      <div class="slabel">Редактор силуэта</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-        <div id="editDraw" onclick="setEditMode('draw')" style="padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)">✏ Рисовать</div>
-        <div id="editErase" onclick="setEditMode('erase')" style="padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)">✕ Стирать</div>
-      </div>
-      <div style="font-size:10px;color:var(--text2);line-height:1.5;padding:4px 0">Левая кнопка мыши — рисовать/стирать. Зажми и веди.</div>
-      <div class="divider"></div>
-      <div class="sgrid" id="gridStats"></div>
-      <button class="btn primary" onclick="goStep(3)">Генерировать стрелки →</button>
-      <button class="btn" onclick="goStep(1)">← Назад</button>
-    </div>
-
-    <!-- STEP 3 -->
-    <div class="panel" id="p3">
-      <div class="slabel">Режим цвета</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-        <div id="modeScheme" onclick="setColorMode('scheme')" style="padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)">Схемы</div>
-        <div id="modeCustom" onclick="setColorMode('custom')" style="padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)">Свои цвета</div>
-      </div>
-      <div id="schemeSec">
-        <div class="scheme-grid" id="schemeGrid"></div>
-        <button class="btn" style="font-size:10px;padding:6px;margin-top:2px" onclick="randomScheme()">🎲 Случайная схема</button>
-      </div>
-      <div id="customSec" style="display:none">
-        <div class="info-box" style="margin-bottom:6px">Выбери 2-5 цветов — они разделятся по яркости картинки</div>
-        <div class="cpick-grid" id="cpickGrid"></div>
-        <div style="display:flex;gap:5px;margin-top:5px">
-          <button class="btn" style="padding:5px;font-size:10px" onclick="cpickAll()">Все</button>
-          <button class="btn" style="padding:5px;font-size:10px" onclick="cpickNone()">Очистить</button>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- ── MODE TOGGLE ── -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-        <div id="modeAuto" onclick="setGenMode('auto')" style="padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:700;background:rgba(124,106,255,.12);color:var(--text)">⚡ АВТО</div>
-        <div id="modeManual" onclick="setGenMode('manual')" style="padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--text2)">🎛 КАСТОМ</div>
-      </div>
-
-      <!-- ── AUTO SECTION ── -->
-      <div id="autoSection">
-        <div class="slabel" style="margin-top:4px">Сложность</div>
-        <div class="diff-grid">
-          <div id="diff_easy" class="diff-btn active" onclick="setDifficulty('easy')">★ EASY<br><span style="font-size:8px;opacity:.7">грид 8-20</span></div>
-          <div id="diff_medium" class="diff-btn" onclick="setDifficulty('medium')">★★ MEDIUM<br><span style="font-size:8px;opacity:.7">грид 15-40</span></div>
-          <div id="diff_hard" class="diff-btn" onclick="setDifficulty('hard')">★★★ HARD<br><span style="font-size:8px;opacity:.7">грид 20-40</span></div>
-          <div id="diff_super_hard" class="diff-btn" onclick="setDifficulty('super_hard')">★★★★ S.HARD<br><span style="font-size:8px;opacity:.7">грид 40-65</span></div>
-        </div>
-        <div id="diffInfo" class="diff-info"></div>
-        <div id="diffGridWarn" style="display:none;font-size:10px;color:#FF8D00;padding:6px 8px;background:rgba(255,141,0,.07);border-radius:6px;border:1px solid rgba(255,141,0,.2);line-height:1.5;margin-top:4px"></div>
-      </div>
-
-      <!-- ── MANUAL SECTION ── -->
-      <div id="manualSection" style="display:none">
-        <div class="info-box" style="font-size:10px;margin-top:4px;margin-bottom:6px">Ручные параметры · паттерны можно суммировать > 100% (нормализуются)</div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>Мин. длина пути</label><span class="ctrl-val" id="minLV">3</span></div>
-          <input type="range" id="minLs" min="1" max="20" value="3" step="1" oninput="minLV.textContent=this.value">
-        </div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>Макс. длина пути</label><span class="ctrl-val" id="maxLV">30</span></div>
-          <input type="range" id="maxLs" min="3" max="60" value="30" step="1" oninput="maxLV.textContent=this.value">
-        </div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>% коротких (1-3)</label><span class="ctrl-val" id="shortV">20%</span></div>
-          <input type="range" id="shortRs" min="0" max="80" value="20" step="5" oninput="shortV.textContent=this.value+'%'">
-        </div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>Змейка %</label><span class="ctrl-val" id="snakeV">50%</span></div>
-          <input type="range" id="snakeRs" min="0" max="100" value="50" step="5" oninput="snakeV.textContent=this.value+'%'">
-        </div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>Прямые %</label><span class="ctrl-val" id="straightV">30%</span></div>
-          <input type="range" id="straightRs" min="0" max="100" value="30" step="5" oninput="straightV.textContent=this.value+'%'">
-        </div>
-        <div class="ctrl">
-          <div class="ctrl-head"><label>L-форма %</label><span class="ctrl-val" id="lV">20%</span></div>
-          <input type="range" id="lRs" min="0" max="100" value="20" step="5" oninput="lV.textContent=this.value+'%'">
-        </div>
-      </div>
-
-      <div class="divider"></div>
-      <button class="btn primary" onclick="generateArrows()">⚡ Генерировать стрелки</button>
-      <button class="btn" onclick="generateArrows()">↺ Перегенерировать</button>
-      <div class="divider"></div>
-      <div class="sgrid" id="arrowStats"></div>
-      <div id="vbox"></div>
-      <button class="btn primary" onclick="goStep(4)">Экспорт →</button>
-      <button class="btn" onclick="goStep(2)">← Назад</button>
-    </div>
-
-    <!-- STEP 4 -->
-    <div class="panel" id="p4">
-      <div class="slabel">Экспорт уровня</div>
-      <div class="sgrid" id="exportStats"></div>
-      <div class="ctrl" style="margin-top:8px">
-        <div class="ctrl-head"><label>Имя файла</label></div>
-        <input type="text" id="fname" value="Level_new_HM">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-        <button onclick="exportPrefab()" style="padding:16px 6px;border-radius:10px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;background:linear-gradient(135deg,#00b894,#00cec9);color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px">
-          <span style="font-size:22px">🗂</span>.prefab<br><span style="font-size:9px;opacity:.75;font-weight:400">Unity</span>
-        </button>
-        <button onclick="exportJSON()" style="padding:16px 6px;border-radius:10px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px">
-          <span style="font-size:22px">{ }</span>.json<br><span style="font-size:9px;opacity:.75;font-weight:400">Raw data</span>
-        </button>
-      </div>
-      <button class="btn" onclick="copyJSON()" style="margin-top:6px">📋 Копировать JSON в буфер</button>
-      <div class="divider"></div>
-      <div class="slabel">Предпросмотр JSON</div>
-      <div class="jbox" id="jsonBox"></div>
-      <button class="btn" onclick="goStep(3)" style="margin-top:4px">← Назад</button>
-    </div>
-  </div>
-
-  <div class="canvas-area" id="canvasArea">
-    <div class="canvas-loading" id="canvasLoading">
-      <div class="big-spinner"></div>
-      <span id="loadingText">Генерируем AI картинку...</span>
-    </div>
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">✦</div>
-      <p>Сгенерируй картинку через AI или загрузи свою</p>
-    </div>
-    <div class="canvas-wrap" id="canvasWrap" style="display:none">
-      <canvas id="mainCanvas"></canvas>
-    </div>
-  </div>
+<div class="top">
+  <h1>✦ ARROW STUDIO <span style="color:var(--text3);font-weight:400">v7</span></h1>
+  <span class="v">cloud · v53-engine · editor</span>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="container">
+
+  <!-- Step 1: Image -->
+  <div class="panel">
+    <h2><span class="step">1</span>Картинка</h2>
+    <div class="img-row">
+      <div class="img-presets">
+        <button class="preset-btn" data-preset="duck">🦆 утка</button>
+        <button class="preset-btn" data-preset="rooster">🐓 петух</button>
+        <button class="preset-btn" data-preset="star">★ звезда</button>
+      </div>
+      <label class="file-btn" for="fileInput">📁 выбрать файл</label>
+      <input type="file" id="fileInput" accept="image/*">
+      <img class="img-preview" id="imgPreview" style="display:none">
+      <div class="img-info" id="imgInfo">— картинка не загружена —</div>
+    </div>
+  </div>
+
+  <!-- Step 2: Bucket -->
+  <div class="panel">
+    <h2><span class="step">2</span>Сложность</h2>
+    <div class="bucket-grid">
+      <button class="b-btn" data-b="easy"><div class="label">★ EASY</div><div class="range">score &lt; 5500</div></button>
+      <button class="b-btn active" data-b="medium"><div class="label">★★ MEDIUM</div><div class="range">5500-12400</div></button>
+      <button class="b-btn" data-b="hard"><div class="label">★★★ HARD</div><div class="range">12400-19975</div></button>
+      <button class="b-btn" data-b="superhard"><div class="label">★★★★ S.HARD</div><div class="range">≥ 19975</div></button>
+    </div>
+  </div>
+
+  <!-- Step 3: Generate -->
+  <div class="panel">
+    <h2><span class="step">3</span>Варианты</h2>
+    <div class="gen-row">
+      <button class="gen-btn" id="genBtn" disabled>✦ СОЗДАТЬ ВАРИАНТЫ</button>
+      <span style="color:var(--text2);font-size:11px" id="genHint">— загрузи картинку —</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3);line-height:1.5">
+      <span style="color:var(--text2)">Авто-распределение мощности:</span>
+      EASY → 4 варианта · MEDIUM → 3 · HARD → 2 · S.HARD → 1 (вся мощь на один)
+    </div>
+    <div class="gen-status" id="genStatus" style="display:none">
+      <span id="genStatusText">Готов</span>
+      <span class="pill" id="genPill"></span>
+      <div class="pbar" id="pbar" style="display:none"><div class="pbar-fill" id="pbarFill" style="width:0%"></div></div>
+    </div>
+    <div class="log" id="log" style="display:none"></div>
+  </div>
+
+  <!-- Cards -->
+  <div class="panel">
+    <h2><span class="step">4</span>Карточки <span style="color:var(--text3);font-size:11px;text-transform:none">кликни чтобы посмотреть детали</span></h2>
+    <div class="cards" id="cards">
+      <div class="empty" id="emptyState">
+        <div class="big">✦</div>
+        <div>Карточки появятся здесь по мере генерации</div>
+        <div style="margin-top:6px;font-size:11px">Время первого варианта обычно 3-7 секунд</div>
+      </div>
+    </div>
+
+    <div class="detail" id="detail">
+      <div class="editor-wrap">
+        <!-- Toolbar -->
+        <div class="editor-toolbar">
+          <div class="tool-group">
+            <button class="tool-btn active" id="toolView" data-tool="view" title="Просмотр">👁 Просмотр</button>
+            <button class="tool-btn" id="toolDraw" data-tool="draw" title="Рисование стрелок (зажми ЛКМ)">✏ Рисование</button>
+            <button class="tool-btn" id="toolDelete" data-tool="delete" title="Удалить стрелку (клик)">🗑 Удалить</button>
+            <button class="tool-btn" id="toolReverse" data-tool="reverse" title="Развернуть стрелку (клик)">↔ Реверс</button>
+          </div>
+          <div class="tool-divider"></div>
+          <div class="tool-group">
+            <button class="tool-btn" id="toolRecolor" title="Перекрасить все стрелки">🎨 Покрасить</button>
+            <select id="schemeSelect" class="tool-select" title="Цветовая схема">
+              <option value="0">🌊 Океан</option>
+              <option value="1">🔥 Огонь</option>
+              <option value="2">🌲 Лес</option>
+              <option value="3">🌅 Закат</option>
+              <option value="4">💜 Неон</option>
+              <option value="5">🏝 Тропик</option>
+              <option value="6">🌋 Лава</option>
+              <option value="7">✨ Аврора</option>
+              <option value="8">🧪 Кислота</option>
+              <option value="9">🌌 Космос</option>
+              <option value="10">🌈 Радуга</option>
+              <option value="11">❄ Зима</option>
+            </select>
+          </div>
+          <div class="tool-divider"></div>
+          <div class="tool-group">
+            <button class="tool-btn" id="toolUndo" title="Откат (Ctrl+Z)">↶ Назад</button>
+            <button class="tool-btn" id="toolGrid" title="Сетка">⊞ Сетка</button>
+          </div>
+        </div>
+        
+        <!-- Hint bar -->
+        <div class="editor-hint" id="editorHint">Кликни на инструмент чтобы редактировать. По умолчанию — просмотр.</div>
+        
+        <!-- Canvas -->
+        <div class="editor-canvas-wrap">
+          <canvas id="detailCanvas"></canvas>
+        </div>
+        
+        <!-- Stats below canvas -->
+        <div id="detailStats" class="editor-stats"></div>
+        
+        <!-- Action buttons -->
+        <div class="actions">
+          <input type="text" id="exportName" class="export-name" placeholder="Level_studio_HM" value="Level_studio_HM">
+          <button class="action-btn primary" id="exportPrefab">📦 Unity .prefab</button>
+          <button class="action-btn secondary" id="exportBtn">⬇ JSON</button>
+          <button class="action-btn secondary" id="copyJsonBtn">📋 Copy JSON</button>
+          <button class="action-btn secondary" id="closeDetail">✕ Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
 
 <script>
-// ─── PALETTE ──────────────────────────────────────────────────────────────────
-const GCOLS=[
-  {hex:'#00AFFF',r:0,  g:175,b:255,u:'00AFFFFF'},
-  {hex:'#00E5FF',r:0,  g:229,b:255,u:'00E5FFFF'},
-  {hex:'#00FFC8',r:0,  g:255,b:200,u:'00FFC8FF'},
-  {hex:'#7DFF60',r:125,g:255,b:96, u:'7DFF60FF'},
-  {hex:'#FFEB3B',r:255,g:235,b:59, u:'FFEB3BFF'},
-  {hex:'#FFC300',r:255,g:195,b:0,  u:'FFC300FF'},
-  {hex:'#FF8D00',r:255,g:141,b:0,  u:'FF8D00FF'},
-  {hex:'#FF6242',r:255,g:98, b:66, u:'FF6242FF'},
-  {hex:'#FF2ECC',r:255,g:46, b:204,u:'FF2ECCFF'},
-  {hex:'#FF6CE6',r:255,g:108,b:230,u:'FF6CE6FF'},
-  {hex:'#9D4BFF',r:157,g:75, b:255,u:'9D4BFFFF'},
-  {hex:'#6A00FF',r:106,g:0,  b:255,u:'6A00FFFF'},
-  {hex:'#2149FF',r:33, g:73, b:255,u:'2149FFFF'},
-  {hex:'#B5E526',r:181,g:229,b:38, u:'B5E526FF'},
-];
+"use strict";
 
-const SCHEMES=[
+// ════════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════════
+const CLOUD_URL = 'https://arrow-generator-716415572460.us-central1.run.app';
+
+// Bucket → reference statistics from production levels (686 prefabs).
+// Совпадает с engine API в редакторе (BUCKET_REFERENCE).
+const BUCKET_REFERENCE = {
+  easy:      { score_med: 4978,  arrows_p25: 42,  arrows_med: 70,  arrows_p75: 98,  cells_med: 611  },
+  medium:    { score_med: 6992,  arrows_p25: 72,  arrows_med: 92,  arrows_p75: 125, cells_med: 851  },
+  hard:      { score_med: 18699, arrows_p25: 108, arrows_med: 142, arrows_p75: 174, cells_med: 1334 },
+  superhard: { score_med: 21252, arrows_p25: 98,  arrows_med: 116, arrows_p75: 126, cells_med: 1204 }
+};
+const TARGET_DENSITY = 0.10; // ~10% клеток грида = стрелки в продакшене
+
+// recommendSizes(image, bucket) — на основе картинки и бакета подбирает
+// 4-5 размеров где силуэт читаемый И score попадает в нужный диапазон.
+// Зеркало engine.recommendSizes из редактора.
+function recommendSizes(img, bucket, want) {
+  want = want || 5;
+  const ref = BUCKET_REFERENCE[bucket];
+  if (!ref) return { sizes: [40, 44, 48, 52, 56], fillR: 0.5 };
+  
+  // Считаем fillRatio картинки
+  const c = document.createElement('canvas');
+  const ms = 100;
+  c.width = ms; c.height = ms;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, ms, ms);
+  const px = ctx.getImageData(0, 0, ms, ms).data;
+  let nonAlpha = 0;
+  const total = ms * ms;
+  const corners = [px[3], px[(ms-1)*4+3], px[(ms-1)*ms*4+3], px[((ms-1)*ms+ms-1)*4+3]];
+  const transBg = corners.some(a => a < 30);
+  if (transBg) {
+    for (let i = 3; i < px.length; i += 4) if (px[i] >= 128) nonAlpha++;
+  } else {
+    let bgR=0,bgG=0,bgB=0,n=0;
+    for (const [cx,cy] of [[0,0],[ms-1,0],[0,ms-1],[ms-1,ms-1]]) {
+      const ci = (cy*ms+cx)*4;
+      bgR += px[ci]; bgG += px[ci+1]; bgB += px[ci+2]; n++;
+    }
+    bgR/=n; bgG/=n; bgB/=n;
+    const bgB2 = bgR*0.299 + bgG*0.587 + bgB*0.114;
+    for (let i = 0; i < px.length; i += 4) {
+      const b = px[i]*0.299 + px[i+1]*0.587 + px[i+2]*0.114;
+      if (Math.abs(b - bgB2) > 30) nonAlpha++;
+    }
+  }
+  const fillR = Math.max(0.10, Math.min(0.95, nonAlpha / total));
+  
+  // ★★★ КЛЮЧЕВАЯ ФОРМУЛА (v5) ★★★
+  // Берём cells_med для бакета — медианное число клеток силуэта в реальных
+  // продакшен-уровнях этого бакета. И варьируем ±15% вокруг него.
+  // 
+  // Все 5 размеров будут БЛИЗКИМИ → все в одном бакете.
+  // Раньше брали диапазон p25..p75 → крайние улетали в соседние бакеты.
+  //
+  // Формула:  cells_silhouette = N² × fillR  →  N = sqrt(cells / fillR)
+  // 
+  // Variations: [0.85, 0.92, 1.0, 1.08, 1.16] × cells_med
+  const targetCells = [
+    ref.cells_med * 0.85,
+    ref.cells_med * 0.92,
+    ref.cells_med * 1.00,
+    ref.cells_med * 1.08,
+    ref.cells_med * 1.16,
+  ];
+  
+  let sizes = targetCells
+    .map(tc => Math.round(Math.sqrt(tc / fillR)))
+    .filter(s => s >= 10 && s <= 75);
+  
+  // Дедуп с шагом 2 (раньше был 3 — теперь нужен меньше т.к. диапазон уже)
+  const uniq = [];
+  for (const s of sizes) {
+    if (uniq.every(u => Math.abs(u - s) >= 2)) uniq.push(s);
+  }
+  
+  // Гарантия минимум `want` размеров
+  while (uniq.length < want) {
+    const min = Math.min(...uniq);
+    const max = Math.max(...uniq);
+    if (uniq.length % 2 === 0 && min - 2 >= 10) {
+      uniq.push(min - 2);
+    } else if (max + 2 <= 75) {
+      uniq.push(max + 2);
+    } else if (min - 2 >= 10) {
+      uniq.push(min - 2);
+    } else {
+      break;
+    }
+  }
+  
+  uniq.sort((a,b) => a - b);
+  return { sizes: uniq.slice(0, want), fillR };
+}
+
+// Reachability check: для данной картинки реально ли получить score нужного бакета
+function bucketReachable(img, bucket) {
+  // Грубая эвристика: считаем максимальное количество клеток что можно
+  // получить (80×80 × fillR). Если ожидаемое arrows*HFP не дотянет до
+  // нижней границы bucket — предупреждаем.
+  // На самом деле точно сказать может только сервер, поэтому это
+  // только early-warning, не блокирующий.
+  return true; // TODO: implement, пока всегда true
+}
+
+// State
+let imgEl = null;
+let imgSourceName = '';
+let bucket = 'medium';
+let currentVariants = [];   // collected from SSE
+let activeAbort = null;     // AbortController for cancel
+let selectedIdx = -1;
+
+// ════════════════════════════════════════════════════════════════════
+// IMAGE
+// ════════════════════════════════════════════════════════════════════
+const presetUrls = {
+  duck: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Pekin_duck.jpg/200px-Pekin_duck.jpg',
+  rooster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Brown_Leghorn_rooster.jpg/200px-Brown_Leghorn_rooster.jpg',
+  star: 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><polygon fill="black" points="100,10 122,75 190,75 135,115 156,180 100,140 44,180 65,115 10,75 78,75"/></svg>`),
+};
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+  b.addEventListener('click', () => loadImage(presetUrls[b.dataset.preset], b.textContent.trim()));
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  loadImage(url, f.name);
+});
+
+function loadImage(src, name) {
+  imgSourceName = name;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    imgEl = img;
+    document.getElementById('imgPreview').src = src;
+    document.getElementById('imgPreview').style.display = '';
+    document.getElementById('imgInfo').innerHTML =
+      `<b>${name}</b> · ${img.naturalWidth}×${img.naturalHeight} px`;
+    document.getElementById('genBtn').disabled = false;
+    document.getElementById('genHint').textContent = '— готов к генерации —';
+  };
+  img.onerror = () => {
+    document.getElementById('imgInfo').textContent = '⚠ не удалось загрузить картинку';
+  };
+  img.src = src;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// BUCKET
+// ════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.b-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.b-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    bucket = b.dataset.b;
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════
+// IMAGE → SILHOUETTE (resize for given grid)
+// ════════════════════════════════════════════════════════════════════
+function makeSilhouette(img, gridMin) {
+  const asp = img.naturalWidth / img.naturalHeight;
+  let gw, gh;
+  if (asp >= 1) { gw = gridMin; gh = Math.max(3, Math.round(gridMin / asp)); }
+  else { gh = gridMin; gw = Math.max(3, Math.round(gridMin * asp)); }
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = gw; canvas.height = gh;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, gw, gh);
+  const px = ctx.getImageData(0, 0, gw, gh).data;
+  
+  // Detect bg
+  const corners = [px[3], px[(gw-1)*4+3], px[(gh-1)*gw*4+3], px[((gh-1)*gw+gw-1)*4+3]];
+  const transBg = corners.some(a => a < 30);
+  
+  let bgR=0,bgG=0,bgB=0,n=0;
+  for (const [cx,cy] of [[0,0],[gw-1,0],[0,gh-1],[gw-1,gh-1]]) {
+    const ci = (cy*gw+cx)*4;
+    bgR += px[ci]; bgG += px[ci+1]; bgB += px[ci+2]; n++;
+  }
+  bgR/=n; bgG/=n; bgB/=n;
+  const bgBright = bgR*0.299 + bgG*0.587 + bgB*0.114;
+  const lightBg = !transBg && bgBright > 160;
+  const thresh = 80;
+  
+  const cells = [];
+  const pixelMapData = {};
+  let minB = 255, maxB = 0;
+  for (let r = 0; r < gh; r++) {
+    for (let c = 0; c < gw; c++) {
+      const i = (r*gw+c)*4;
+      const R=px[i], G=px[i+1], B=px[i+2], A=px[i+3];
+      const bright = R*0.299 + G*0.587 + B*0.114;
+      let inside;
+      if (transBg) inside = A > thresh/2;
+      else if (lightBg) inside = Math.abs(bright - bgBright) > thresh*0.3;
+      else inside = bright > thresh;
+      if (inside) {
+        const k = c+'_'+r;
+        cells.push(k);
+        pixelMapData[k] = {bright};
+        if (bright < minB) minB = bright;
+        if (bright > maxB) maxB = bright;
+      }
+    }
+  }
+  
+  // Compute walls (holes inside)
+  const cellSet = new Set(cells);
+  const outside = new Set();
+  const queue = [];
+  for (let cc=0;cc<gw;cc++) { 
+    for (const rr of [0, gh-1]) {
+      const k = cc+'_'+rr;
+      if (!cellSet.has(k)) { outside.add(k); queue.push([cc,rr]); }
+    }
+  }
+  for (let rr=0;rr<gh;rr++) { 
+    for (const cc of [0, gw-1]) {
+      const k = cc+'_'+rr;
+      if (!cellSet.has(k)) { outside.add(k); queue.push([cc,rr]); }
+    }
+  }
+  while (queue.length) {
+    const [c,r] = queue.shift();
+    for (const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nc=c+dc, nr=r+dr, nk = nc+'_'+nr;
+      if (nc<0||nc>=gw||nr<0||nr>=gh) continue;
+      if (cellSet.has(nk) || outside.has(nk)) continue;
+      outside.add(nk);
+      queue.push([nc,nr]);
+    }
+  }
+  const walls = [];
+  for (let r=0;r<gh;r++) for (let c=0;c<gw;c++) {
+    const k = c+'_'+r;
+    if (!cellSet.has(k) && !outside.has(k)) walls.push(k);
+  }
+  
+  return { cells, gw, gh, pixelMapData, walls };
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PREVIEW DRAWING (small canvas for cards)
+// ════════════════════════════════════════════════════════════════════
+function drawPreview(canvas, variant) {
+  const cs = canvas.parentElement.clientWidth;
+  canvas.width = cs;
+  canvas.height = cs;
+  const ctx = canvas.getContext('2d');
+  
+  const { gw, gh, arrows } = variant;
+  const cell = Math.max(2, Math.floor(Math.min(cs/gw, cs/gh)));
+  const offX = (cs - gw*cell) / 2;
+  const offY = (cs - gh*cell) / 2;
+  
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, cs, cs);
+  
+  // Full grid frame — показать что грид это полное прямоугольное поле
+  ctx.fillStyle = '#0f0f1c';
+  ctx.fillRect(offX, offY, gw*cell, gh*cell);
+  ctx.strokeStyle = 'rgba(124,106,255,0.18)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(offX, offY, gw*cell, gh*cell);
+  
+  // Cells (silhouette background) — subtle highlight on full grid
+  const silSet = new Set(variant.silCellsArr || []);
+  ctx.fillStyle = '#1a1a30';
+  for (const k of silSet) {
+    const [c, r] = k.split('_').map(Number);
+    ctx.fillRect(offX + c*cell, offY + r*cell, cell-0.4, cell-0.4);
+  }
+  
+  // Silhouette outline — тонкая граница чтобы форму было видно
+  if (silSet.size && cell >= 3) {
+    ctx.strokeStyle = 'rgba(124,106,255,0.35)';
+    ctx.lineWidth = 1;
+    for (const k of silSet) {
+      const [c, r] = k.split('_').map(Number);
+      const x = offX + c*cell, y = offY + r*cell;
+      // Рисуем ребро только если соседняя клетка НЕ в силуэте
+      if (!silSet.has((c-1)+'_'+r)) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y+cell); ctx.stroke(); }
+      if (!silSet.has((c+1)+'_'+r)) { ctx.beginPath(); ctx.moveTo(x+cell, y); ctx.lineTo(x+cell, y+cell); ctx.stroke(); }
+      if (!silSet.has(c+'_'+(r-1))) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+cell, y); ctx.stroke(); }
+      if (!silSet.has(c+'_'+(r+1))) { ctx.beginPath(); ctx.moveTo(x, y+cell); ctx.lineTo(x+cell, y+cell); ctx.stroke(); }
+    }
+  }
+  
+  // Arrows
+  ctx.lineWidth = Math.max(1, cell*0.4);
+  ctx.lineCap = 'round';
+  for (const a of arrows) {
+    const p = a._path;
+    if (!p || p.length < 1) continue;
+    ctx.strokeStyle = a._hex || '#00E5FF';
+    ctx.fillStyle = a._hex || '#00E5FF';
+    if (p.length === 1) {
+      ctx.beginPath();
+      ctx.arc(offX + p[0][0]*cell + cell/2, offY + p[0][1]*cell + cell/2, cell*0.3, 0, Math.PI*2);
+      ctx.fill();
+      continue;
+    }
+    ctx.beginPath();
+    p.forEach(([cx, ry], i) => {
+      const x = offX + cx*cell + cell/2;
+      const y = offY + ry*cell + cell/2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    if (p.length >= 2 && cell >= 4) {
+      const [lx, ly] = p[p.length-1];
+      const [px2, py2] = p[p.length-2];
+      const ex = offX + lx*cell + cell/2;
+      const ey = offY + ly*cell + cell/2;
+      const fx = offX + px2*cell + cell/2;
+      const fy = offY + py2*cell + cell/2;
+      const ang = Math.atan2(ey-fy, ex-fx);
+      const as = Math.max(2, cell*0.4);
+      ctx.beginPath();
+      ctx.moveTo(ex + Math.cos(ang)*as, ey + Math.sin(ang)*as);
+      ctx.lineTo(ex + Math.cos(ang+2.5)*as*0.55, ey + Math.sin(ang+2.5)*as*0.55);
+      ctx.lineTo(ex + Math.cos(ang-2.5)*as*0.55, ey + Math.sin(ang-2.5)*as*0.55);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LOG / UI helpers
+// ════════════════════════════════════════════════════════════════════
+function log(msg, type='info') {
+  const box = document.getElementById('log');
+  box.style.display = 'block';
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  const ts = new Date().toLocaleTimeString('ru', {hour12:false});
+  line.textContent = `[${ts}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setStatus(text, mode='info') {
+  const box = document.getElementById('genStatus');
+  box.style.display = '';
+  box.className = 'gen-status' + (mode==='active' ? ' active' : '');
+  document.getElementById('genStatusText').textContent = text;
+  const pill = document.getElementById('genPill');
+  if (mode === 'active') {
+    pill.className = 'pill live'; pill.textContent = 'live';
+  } else {
+    pill.className = 'pill'; pill.textContent = '';
+  }
+}
+
+function setProgress(pct) {
+  const pbar = document.getElementById('pbar');
+  if (pct == null) { pbar.style.display = 'none'; return; }
+  pbar.style.display = '';
+  document.getElementById('pbarFill').style.width = Math.min(100, Math.max(0, pct)) + '%';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// GENERATE — SSE streaming from /generate-variants
+// ════════════════════════════════════════════════════════════════════
+const genBtn = document.getElementById('genBtn');
+genBtn.addEventListener('click', () => {
+  if (activeAbort) {
+    // Cancel
+    activeAbort.abort();
+    return;
+  }
+  startGeneration();
+});
+
+async function startGeneration() {
+  if (!imgEl) return;
+  
+  // Reset
+  currentVariants = [];
+  selectedIdx = -1;
+  document.getElementById('cards').innerHTML = '';
+  document.getElementById('detail').classList.remove('show');
+  document.getElementById('emptyState')?.remove();
+  document.getElementById('log').innerHTML = '';
+  
+  // ★★★ v6: Авто-количество вариантов по сложности ★★★
+  // EASY: много простых уровней (4) — у юзера выбор стилей
+  // MEDIUM: средне (3)
+  // HARD: меньше но качественней (2) — генератор страдает на больших гридах
+  // S.HARD: один уровень — всю мощь на него
+  const WANT_BY_BUCKET = { easy: 4, medium: 3, hard: 2, superhard: 1 };
+  const want = WANT_BY_BUCKET[bucket] || 3;
+  const sizesResult = recommendSizes(imgEl, bucket, want);
+  const sizes = sizesResult.sizes;
+  const fillR = sizesResult.fillR;
+  log(`bucket=${bucket} → want=${want} variants · sizes=[${sizes.join(', ')}] · fillRatio=${(fillR*100).toFixed(0)}%`, 'info');
+  
+  // Build silhouettes for each size
+  log(`Подготовка ${sizes.length} силуэтов для bucket=${bucket}...`, 'info');
+  const variantPayloads = sizes.map(gridMin => {
+    const sil = makeSilhouette(imgEl, gridMin);
+    return {
+      silCells: sil.cells,
+      wallCells: sil.walls,
+      pixelMapData: sil.pixelMapData,
+      gw: sil.gw, gh: sil.gh,
+      bucket,
+    };
+  });
+  for (const v of variantPayloads) {
+    log(`  ${v.gw}×${v.gh}: ${v.silCells.length} клеток${v.wallCells.length?' ('+v.wallCells.length+' стен)':''}`, 'info');
+  }
+  
+  const t0 = performance.now();
+  setStatus(`Запрос на сервер...`, 'active');
+  setProgress(0);
+  genBtn.textContent = '✕ ОТМЕНА';
+  genBtn.classList.add('cancel');
+  document.getElementById('genHint').textContent = '— стрим запущен —';
+  
+  activeAbort = new AbortController();
+  
+  try {
+    const resp = await fetch(`${CLOUD_URL}/generate-variants`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ variants: variantPayloads, count: want }),
+      signal: activeAbort.signal,
+    });
+    
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let total = sizes.length;
+    let got = 0;
+    
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      
+      // Parse SSE — split on \n\n
+      while (buf.includes('\n\n')) {
+        const idx = buf.indexOf('\n\n');
+        const chunk = buf.slice(0, idx).trim();
+        buf = buf.slice(idx + 2);
+        if (!chunk.startsWith('data: ')) continue;
+        const json = chunk.slice(6);
+        let msg;
+        try { msg = JSON.parse(json); } catch { continue; }
+        
+        const elapsed = Math.round(performance.now() - t0);
+        
+        if (msg.type === 'start') {
+          total = msg.total;
+          log(`▶ Старт: total=${total}, want=${msg.want}`, 'ok');
+          setStatus(`Идёт подбор · ${total} размеров параллельно...`, 'active');
+        }
+        else if (msg.type === 'variant') {
+          got++;
+          // attach silCellsArr for preview drawing
+          const matchingPayload = variantPayloads.find(v => v.gw === msg.gw && v.gh === msg.gh);
+          msg.silCellsArr = matchingPayload ? matchingPayload.silCells : [];
+          currentVariants.push(msg);
+          log(`✓ ${msg.sizeKey} готов · arrows=${msg.arrows.length} · score=${msg.score} · cls=${msg.cls} · попыток=${msg.attempts} · ${elapsed}ms`, 'ok');
+          renderCard(msg);
+          setProgress((got / want) * 100);
+          setStatus(`Получено ${got}/${want} вариантов · ${(elapsed/1000).toFixed(1)}s`, 'active');
+        }
+        else if (msg.type === 'variant_failed') {
+          log(`✗ ${msg.sizeKey} не получился (${msg.attempts} попыток): ${msg.reason||''}`, 'warn');
+          renderCard({ failed: true, sizeKey: msg.sizeKey, gw: msg.gw, gh: msg.gh, reason: msg.reason });
+        }
+        else if (msg.type === 'complete') {
+          const sec = (msg.timeMs/1000).toFixed(1);
+          const inBucket = currentVariants.filter(v => v.cls === bucket).length;
+          const total = currentVariants.length;
+          
+          log(`◼ Готово: получено ${msg.got} из ${msg.want} за ${sec}s`, msg.got >= msg.want ? 'ok' : 'warn');
+          
+          // Анализ: какие bucket'ы фактически попали
+          if (total > 0 && inBucket < total) {
+            const dist = {};
+            currentVariants.forEach(v => { dist[v.cls] = (dist[v.cls]||0) + 1; });
+            const dominantBucket = Object.entries(dist).sort((a,b) => b[1]-a[1])[0][0];
+            log(`⚠ Из ${total} вариантов в бакет ${bucket.toUpperCase()} попало ${inBucket}. Картинка лучше тянет ${dominantBucket.toUpperCase()}.`, 'warn');
+            
+            // Кнопка «перегенерировать в фактический bucket»
+            if (dominantBucket !== bucket) {
+              showRegenSuggestion(dominantBucket);
+            }
+          }
+          
+          let statusText = `Готово: ${total} вариантов за ${sec}s`;
+          if (inBucket < total) {
+            statusText += ` · ${inBucket}/${total} в ${bucket.toUpperCase()}`;
+          }
+          setStatus(statusText, 'idle');
+          setProgress(100);
+          setTimeout(() => setProgress(null), 1500);
+        }
+      }
+    }
+  } catch(e) {
+    if (e.name === 'AbortError') {
+      log('Отменено пользователем', 'warn');
+      setStatus('Отменено', 'idle');
+    } else {
+      log(`ERROR: ${e.message}`, 'err');
+      setStatus(`Ошибка: ${e.message}`, 'idle');
+    }
+    setProgress(null);
+  } finally {
+    activeAbort = null;
+    genBtn.textContent = '✦ СОЗДАТЬ ВАРИАНТЫ';
+    genBtn.classList.remove('cancel');
+    document.getElementById('genHint').textContent = `— готово, ${currentVariants.length} вариантов —`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CARD RENDERING
+// ════════════════════════════════════════════════════════════════════
+function showRegenSuggestion(suggestedBucket) {
+  // Удаляем старую если была
+  const old = document.getElementById('regenBanner');
+  if (old) old.remove();
+  
+  const colors = {
+    easy: '#00ffc8', medium: '#ffeb3b', hard: '#ff8d00', superhard: '#ff2ecc'
+  };
+  const labels = {
+    easy: 'EASY', medium: 'MEDIUM', hard: 'HARD', superhard: 'S.HARD'
+  };
+  const c = colors[suggestedBucket] || '#7c6aff';
+  const lbl = labels[suggestedBucket] || suggestedBucket;
+  
+  const banner = document.createElement('div');
+  banner.id = 'regenBanner';
+  banner.style.cssText = `
+    margin-top: 12px; padding: 14px 16px;
+    background: rgba(124,106,255,0.08);
+    border: 1px solid ${c};
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  `;
+  banner.innerHTML = `
+    <div style="font-size: 12px; line-height: 1.5">
+      💡 Картинка тянет на <b style="color:${c}">${lbl}</b>, а не на ${bucket.toUpperCase()}.<br>
+      <span style="color: var(--text2); font-size: 11px">Хочешь перегенерировать всё на ${lbl}?</span>
+    </div>
+    <button id="regenBtn" style="
+      padding: 8px 14px; border-radius: 8px;
+      border: none; cursor: pointer;
+      background: ${c}; color: #000;
+      font-weight: 700; font-size: 12px;
+      white-space: nowrap;
+    ">⤿ ${lbl}</button>
+  `;
+  document.getElementById('genStatus').parentElement.insertBefore(
+    banner,
+    document.getElementById('log').nextSibling
+  );
+  
+  document.getElementById('regenBtn').addEventListener('click', () => {
+    // Переключить бакет
+    bucket = suggestedBucket;
+    document.querySelectorAll('.b-btn').forEach(x => x.classList.remove('active'));
+    const target = document.querySelector(`.b-btn[data-b="${suggestedBucket}"]`);
+    if (target) target.classList.add('active');
+    banner.remove();
+    startGeneration();
+  });
+}
+
+function renderCard(v) {
+  const grid = document.getElementById('cards');
+  const card = document.createElement('div');
+  card.className = 'card' + (v.failed ? ' failed' : '');
+  
+  if (v.failed) {
+    card.innerHTML = `
+      <div class="preview" style="background:rgba(255,98,66,0.08);"></div>
+      <div class="head">
+        <span class="size">${v.sizeKey}</span>
+        <span class="badge" style="color:var(--err);border-color:rgba(255,98,66,0.3)">FAILED</span>
+      </div>
+      <div class="err-msg">${v.reason || 'не сгенерировано'}</div>
+    `;
+    grid.appendChild(card);
+    return;
+  }
+  
+  const idx = currentVariants.length - 1;
+  const m = v.metrics || {};
+  const cls = v.cls || 'medium';
+  
+  card.innerHTML = `
+    <div class="preview"><canvas></canvas></div>
+    <div class="head">
+      <span class="size">${v.sizeKey}</span>
+      <span class="badge ${cls}">${cls.toUpperCase()}</span>
+    </div>
+    <div class="stats">
+      <b>${v.arrows.length}</b> стрелок · score <b>${v.score}</b><br>
+      depth ${m.solveDepth||'—'} · HFP ${m.headFacingPerpendicular||'—'} · h2h <b style="color:${m.headToHeadPairs===0?'var(--ok)':'var(--err)'}">${m.headToHeadPairs}</b><br>
+      avgLen ${(m.avgArrowLength||0).toFixed(1)} · ${(v.elapsedMs/1000).toFixed(1)}s
+    </div>
+  `;
+  card.addEventListener('click', () => selectCard(idx));
+  grid.appendChild(card);
+  
+  // Draw preview AFTER attached (need clientWidth)
+  requestAnimationFrame(() => {
+    const cv = card.querySelector('canvas');
+    drawPreview(cv, v);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// EDITOR — встроенный редактор уровня (v7)
+// ════════════════════════════════════════════════════════════════════
+//
+// editorState — текущее состояние выбранной карточки в режиме редактирования.
+// Все изменения юзер делает над editorState.arrows, в карточку currentVariants[idx]
+// они сохраняются автоматически (карточка обновляется тоже).
+//
+// Редактор работает с полным гридом — gw×gh, не только клетки силуэта.
+// Пользователь может рисовать стрелки в любом месте грида (за пределами силуэта тоже).
+
+const GCOLS = [
+  {hex:'#00AFFF'},{hex:'#00E5FF'},{hex:'#00FFC8'},{hex:'#7DFF60'},
+  {hex:'#FFEB3B'},{hex:'#FFC300'},{hex:'#FF8D00'},{hex:'#FF6242'},
+  {hex:'#FF2ECC'},{hex:'#FF6CE6'},{hex:'#9D4BFF'},{hex:'#6A00FF'},
+  {hex:'#2149FF'},{hex:'#B5E526'},
+];
+const SCHEMES = [
   {name:'Океан',  colors:[12,1,2]},
   {name:'Огонь',  colors:[11,6,4]},
   {name:'Лес',    colors:[11,3,13]},
@@ -349,1089 +1187,680 @@ const SCHEMES=[
   {name:'Зима',   colors:[12,1,13]},
 ];
 
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let imgEl=null, sil=null, arrows=[], pixelMap=null;
-let editMode='draw', isDrawing=false, cellSize=10;
-let colorMode='scheme';
-let activeScheme=SCHEMES[0];
-let aiImageUrl=null;
-let currentDifficulty='easy';
-
-// ─── DIFFICULTY PRESETS ──────────────────────────────────────────────────────
-// Based on REAL prefab analysis (12 levels, 4 tiers):
-// EASY:       grids 8-20,  ~20 arrows,  snake 64%, straight 21%, avg_changes 1.7
-// MEDIUM:     grids 15-40, ~63 arrows,  snake 53%, straight 25%, avg_changes 2.25
-// HARD:       grids 20-36, ~78 arrows,  snake 36%, straight 37%, avg_changes 1.76
-// SUPER HARD: grids 40-65, ~144 arrows, snake 38%, straight 34%, avg_changes 1.67
-// KEY INSIGHT: difficulty = grid size × arrow count, NOT path complexity alone
-
-const DIFF = {
-  easy: {
-    color:'#00FFC8', bg:'rgba(0,255,200,.15)', border:'#00FFC8',
-    label:'★ EASY',
-    info:'Маленький грид · ~20 стрелок · плавные змейки',
-    hint:'Реальные примеры: 8×8 (64 ячейки), 15×20 (300 ячеек)',
-    gridMin:8, gridMax:20, gridRec:12,
-    minLen:3, maxLen:21,
-    // Pattern weights (must sum to 100)
-    snakePct:65, straightPct:25, lPct:10,
-    // Short arrows (1-3 cells) % — more = harder visually
-    shortPct:15,
-    avgDur:48, survive:72.8,
-  },
-  medium: {
-    color:'#FFEB3B', bg:'rgba(255,235,59,.15)', border:'#FFEB3B',
-    label:'★★ MEDIUM',
-    info:'Средний грид · ~63 стрелки · mix змейки и L-форм',
-    hint:'Реальные примеры: 15×22 (328 яч.), 19×25 (473 яч.), 36×40 (670 яч.)',
-    gridMin:15, gridMax:40, gridRec:25,
-    minLen:2, maxLen:37,
-    snakePct:53, straightPct:25, lPct:22,
-    shortPct:25,
-    avgDur:97, survive:32.8,
-  },
-  hard: {
-    color:'#FF8D00', bg:'rgba(255,141,0,.15)', border:'#FF8D00',
-    label:'★★★ HARD',
-    info:'Средний грид · ~78 стрелок · ПРЯМЫЕ доминируют (37%)',
-    hint:'Реальные примеры: 20×25 (498 яч.), 21×26 (546 яч.), 31×36 (820 яч.)',
-    gridMin:20, gridMax:40, gridRec:28,
-    minLen:2, maxLen:48,
-    snakePct:36, straightPct:37, lPct:22,  // straight > snake!
-    shortPct:24,
-    avgDur:145, survive:17.6,
-  },
-  super_hard: {
-    color:'#FF2ECC', bg:'rgba(255,46,204,.15)', border:'#FF2ECC',
-    label:'★★★★ S.HARD',
-    info:'Огромный грид · ~144 стрелки · хаос коротких путей',
-    hint:'Реальные примеры: 44×54 (1850 яч.), 53×43 (1204 яч.), 57×40 (926 яч.)',
-    gridMin:40, gridMax:65, gridRec:50,
-    minLen:1, maxLen:60,
-    snakePct:38, straightPct:34, lPct:24,
-    shortPct:28,  // 28% стрелок = 1-3 ячейки → зрительный хаос
-    avgDur:277, survive:14.8,
-  },
+const editorState = {
+  active: false,
+  variantIdx: -1,           // index in currentVariants
+  v: null,                  // ref to current variant
+  arrows: [],               // working copy [{path:[[c,r]...], color:'AABBCCFF', _hex:'#AABBCC'}]
+  silSet: null,             // Set of "c_r" silhouette cells (for highlight)
+  schemeIdx: 0,             // active SCHEMES idx
+  showGrid: true,
+  tool: 'view',             // view | draw | delete | reverse
+  drawing: false,
+  drawPath: [],
+  history: [],              // undo stack
+  cellPx: 12,               // current cell pixel size for canvas
 };
 
-// gen mode: 'auto' or 'manual'
-let genMode = 'auto';
+function toast(msg, kind) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (kind ? ' ' + kind : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
 
-function setGenMode(mode) {
-  genMode = mode;
-  const mA = document.getElementById('modeAuto');
-  const mM = document.getElementById('modeManual');
-  const aS = document.getElementById('autoSection');
-  const mS = document.getElementById('manualSection');
-  const activeStyle = 'padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:700;background:rgba(124,106,255,.12);color:var(--text)';
-  const inactiveStyle = 'padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--text2)';
-  if (mode === 'auto') {
-    mA.style.cssText = activeStyle; mM.style.cssText = inactiveStyle;
-    aS.style.display = ''; mS.style.display = 'none';
-  } else {
-    mM.style.cssText = activeStyle; mA.style.cssText = inactiveStyle;
-    aS.style.display = 'none'; mS.style.display = '';
+function pickColorForPath(path, schemeIdx) {
+  // Берём цвет из активной схемы по позиции стрелки в гриде.
+  // Используем первую клетку как hash anchor.
+  const scheme = SCHEMES[schemeIdx] || SCHEMES[0];
+  const palette = scheme.colors.map(i => GCOLS[i]);
+  if (!path.length) return palette[0];
+  const [c, r] = path[0];
+  const idx = (c * 7 + r * 13 + path.length * 3) % palette.length;
+  return palette[idx];
+}
+
+function recolorAllArrows() {
+  for (const a of editorState.arrows) {
+    const c = pickColorForPath(a._path, editorState.schemeIdx);
+    a._hex = c.hex;
+    a.color = (c.hex.replace('#','') + 'FF').toUpperCase();
   }
+  editorRender();
+  toast('🎨 Перекрашено', 'ok');
 }
 
-function getGenParams() {
-  if (genMode === 'auto') {
-    const p = DIFF[currentDifficulty];
-    return { minLen: p.minLen, maxLen: p.maxLen, snakePct: p.snakePct, straightPct: p.straightPct, lPct: p.lPct, shortPct: p.shortPct };
-  } else {
-    const sn = +document.getElementById('snakeRs').value;
-    const st = +document.getElementById('straightRs').value;
-    const lf = +document.getElementById('lRs').value;
-    return {
-      minLen:     +document.getElementById('minLs').value,
-      maxLen:     +document.getElementById('maxLs').value,
-      shortPct:   +document.getElementById('shortRs').value,
-      snakePct:   sn,
-      straightPct:st,
-      lPct:       lf,
-    };
+function editorPushHistory() {
+  // Snapshot — JSON serialize current arrows
+  const snap = editorState.arrows.map(a => ({
+    _path: a._path.map(p => [p[0], p[1]]),
+    _hex: a._hex,
+    color: a.color
+  }));
+  editorState.history.push(snap);
+  if (editorState.history.length > 50) editorState.history.shift();
+}
+
+function editorUndo() {
+  if (!editorState.history.length) {
+    toast('Нечего откатывать');
+    return;
   }
+  const snap = editorState.history.pop();
+  editorState.arrows = snap.map(a => ({
+    _path: a._path.map(p => [p[0], p[1]]),
+    _hex: a._hex,
+    color: a.color,
+    Indices: a._path.map(([c,r]) => r * editorState.v.gw + c)
+  }));
+  editorRender();
+  toast('↶ Откат');
 }
 
-// ─── TOAST ───────────────────────────────────────────────────────────────────
-function toast(msg,type='ok'){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast show '+type;
-  setTimeout(()=>t.className='toast',2800);
-}
-
-// ─── STEP NAV ────────────────────────────────────────────────────────────────
-function goStep(n){
-  if(n>1&&!imgEl){toast('Сначала загрузи или сгенерируй картинку!','err');return}
-  // Switch panels FIRST so canvas gets correct clientWidth/clientHeight
-  [1,2,3,4].forEach(i=>{
-    document.getElementById('p'+i).classList.toggle('show',i===n);
-    const b=document.getElementById('sBtn'+i);
-    b.classList.toggle('active',i===n);
-    b.classList.toggle('done',i<n);
-  });
-  if(n===2){updateGridSizeHint();if(imgEl)renderGrid(false);}
-  if(n>1&&!sil)renderGrid(false);
-  if(n===3){buildSchemeGrid();buildCpickGrid();setDifficulty(currentDifficulty);}
-  if(n===3&&arrows.length)drawArrows();
-  if(n===4){if(!arrows.length)generateArrows();showExport();}
-}
-
-// ─── GRID SIZE HINT ───────────────────────────────────────────────────────────
-function updateGridSizeHint(){
-  const gs=+document.getElementById('gs').value;
-  const hint=document.getElementById('gridSizeHint');
-  let text='', color='';
-  if(gs<=35){text=`Грид ${gs} → лёгкий уровень · мало ячеек · немного стрелок`;color='#00FFC8';}
-  else if(gs<=50){text=`Грид ${gs} → средний уровень · умеренное количество стрелок`;color='#FFEB3B';}
-  else if(gs<=65){text=`Грид ${gs} → сложный уровень · много ячеек и стрелок`;color='#FF8D00';}
-  else{text=`Грид ${gs} → супер-сложный уровень · огромный силуэт`;color='#FF2ECC';}
-  hint.innerHTML=`<span style="color:${color};font-weight:700">${text}</span>`;
-}
-
-// ─── DIFFICULTY ───────────────────────────────────────────────────────────────
-function setDifficulty(diff){
-  currentDifficulty = diff;
-  const p = DIFF[diff];
-
-  Object.keys(DIFF).forEach(d=>{
-    const btn = document.getElementById('diff_'+d);
-    if(btn) btn.classList.toggle('active', d===diff);
-  });
-
-  const info = document.getElementById('diffInfo');
-  if(info){
-    info.style.color = p.color;
-    info.style.background = p.bg;
-    info.style.borderColor = p.border;
-    info.innerHTML = `${p.info}<br><span style="opacity:.7">${p.hint}</span><br>`+
-      `<span style="opacity:.5;font-size:9px">avg ${p.avgDur}s · ${p.survive}% survive</span>`;
-  }
-  updateDiffGridWarn();
-}
-
-function updateDiffGridWarn(){
-  const gs = +document.getElementById('gs').value;
-  const p = DIFF[currentDifficulty];
-  const warn = document.getElementById('diffGridWarn');
-  if(!warn) return;
-  if(genMode !== 'auto'){ warn.style.display='none'; return; }
-  if(gs < p.gridMin || gs > p.gridMax){
-    warn.style.display = 'block';
-    warn.innerHTML = `⚠ Грид ${gs} не в диапазоне <b>${p.label}</b> (${p.gridMin}–${p.gridMax}).<br>`+
-      `Оптимально: <b>${p.gridRec}</b>. Зайди на шаг 01 и поправь.`;
-  } else {
-    warn.style.display = 'none';
-  }
-}
-
-// ─── COLOR MODE ───────────────────────────────────────────────────────────────
-function setColorMode(mode){
-  colorMode=mode;
-  const ms=document.getElementById('modeScheme');
-  const mc=document.getElementById('modeCustom');
-  const activeStyle='padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12)';
-  const inactiveStyle='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
-  if(mode==='scheme'){
-    ms.style.cssText=activeStyle;ms.style.color='var(--text)';
-    mc.style.cssText=inactiveStyle;
-    document.getElementById('schemeSec').style.display='';
-    document.getElementById('customSec').style.display='none';
-  } else {
-    mc.style.cssText=activeStyle;mc.style.color='var(--text)';
-    ms.style.cssText=inactiveStyle;
-    document.getElementById('schemeSec').style.display='none';
-    document.getElementById('customSec').style.display='';
-  }
-}
-
-// ─── AI GENERATION ────────────────────────────────────────────────────────────
-const STYLE_SUFFIX=', 2d flat cartoon vector art, side view, isolated on white background, clean silhouette, no background, bold outlines, game asset style, vibrant colors';
-
-function setAiStatus(msg,loading=false){
-  const el=document.getElementById('aiStatus');
-  el.innerHTML=loading?`<span class="spinner"></span>${msg}`:msg;
-  addLog(msg,loading?'info':'ok');
-}
-
-function addLog(msg,type='info'){
-  const box=document.getElementById('logBox');
-  if(!box)return;
-  const ts=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const color=type==='err'?'#FF6242':type==='ok'?'#00FFC8':'#8888aa';
-  const line=document.createElement('div');
-  line.style.cssText=`color:${color};font-size:10px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)`;
-  line.textContent=`[${ts}] ${msg}`;
-  box.appendChild(line);
-  box.scrollTop=box.scrollHeight;
-  while(box.children.length>20)box.removeChild(box.firstChild);
-}
-
-async function translatePrompt(ruText){
-  const dict={
-    'пистолет':'pistol gun','акула':'shark','петух':'rooster chicken',
-    'заяц':'rabbit hare','кот':'cat','кошка':'cat','собака':'dog',
-    'лиса':'fox','волк':'wolf','медведь':'bear','дракон':'dragon',
-    'динозавр':'dinosaur','самолет':'airplane','машина':'car',
-    'мотоцикл':'motorcycle','корабль':'ship boat','ракета':'rocket',
-    'меч':'sword','топор':'axe','лук':'bow arrow','рыба':'fish',
-    'орел':'eagle bird','лев':'lion','тигр':'tiger','лошадь':'horse',
-    'слон':'elephant','обезьяна':'monkey','черепаха':'turtle',
-    'крокодил':'crocodile','бабочка':'butterfly','дерево':'tree',
-    'цветок':'flower','гриб':'mushroom',
-  };
-  const lower=ruText.toLowerCase().trim();
-  for(const[ru,en] of Object.entries(dict)){
-    if(lower.includes(ru))return en;
-  }
-  return ruText;
-}
-
-async function generateAI(){
-  const key=document.getElementById('apiKey').value.trim();
-  if(!key){toast('Введи API ключ Replicate','err');return}
-  const ruText=document.getElementById('aiPromptRu').value.trim();
-  if(!ruText){toast('Напиши что нарисовать','err');return}
-  const englishBase=await translatePrompt(ruText);
-  const fullPrompt=englishBase+STYLE_SUFFIX;
-  setAiStatus('Отправляем запрос...',true);
-  document.getElementById('logBox').style.display='block';
-  document.getElementById('logBox').innerHTML='';
-  addLog('Промпт: '+englishBase,'info');
-  document.getElementById('canvasLoading').style.display='flex';
-  document.getElementById('loadingText').textContent='Генерируем AI картинку...';
-  document.getElementById('canvasWrap').style.display='none';
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('aiImgWrap').style.display='none';
-  document.getElementById('useAiBtn').style.display='none';
-
-  try {
-    const FN='/.netlify/functions/replicate';
-    const startRes=await fetch(FN,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'create',apiKey:key,prompt:fullPrompt})
-    });
-    addLog('Ответ: '+startRes.status,startRes.ok?'ok':'err');
-    if(!startRes.ok){
-      const txt=await startRes.text();
-      throw new Error('Ошибка '+startRes.status+': '+txt.slice(0,120));
-    }
-    const prediction=await startRes.json();
-    const predId=prediction.id;
-    if(!predId)throw new Error('Нет ID: '+JSON.stringify(prediction).slice(0,100));
-    addLog('ID: '+predId,'ok');
-    setAiStatus('Рисуем... ~20-40 сек',true);
-    let result=null;
-    for(let i=0;i<90;i++){
-      await new Promise(r=>setTimeout(r,2000));
-      const pollRes=await fetch(FN,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({action:'poll',predictionId:predId,apiKey:key})
-      });
-      const pollData=await pollRes.json();
-      addLog(`[${i*2}с]: ${pollData.status}`,'info');
-      if(pollData.status==='succeeded'){result=pollData;break}
-      if(pollData.status==='failed')throw new Error('Провалилась: '+(pollData.error||'?'));
-      setAiStatus(`Рисуем... (${i*2}с)`,true);
-    }
-    if(!result||!result.output)throw new Error('Таймаут — попробуй снова');
-    const imgUrl=Array.isArray(result.output)?result.output[0]:result.output;
-    aiImageUrl=imgUrl;
-    document.getElementById('canvasLoading').style.display='none';
-    const aiImg=document.getElementById('aiImg');
-    aiImg.src=imgUrl;
-    aiImg.onload=()=>{
-      document.getElementById('aiImgWrap').style.display='block';
-      document.getElementById('useAiBtn').style.display='block';
-      setAiStatus('✓ Готово! Нажми "Использовать"');
-      toast('AI картинка готова!');
-    };
-    aiImg.onerror=()=>loadAiImageViaCanvas(imgUrl);
-  } catch(e){
-    document.getElementById('canvasLoading').style.display='none';
-    document.getElementById('emptyState').style.display='flex';
-    addLog('ОШИБКА: '+e.message,'err');
-    setAiStatus('Ошибка: '+e.message);
-    toast('Ошибка: '+e.message,'err');
-  }
-}
-
-function loadAiImageViaCanvas(url){
-  const proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
-  const img=new Image();
-  img.crossOrigin='anonymous';
-  img.onload=()=>{
-    imgEl=img;
-    document.getElementById('imgPreview').src=proxyUrl;
-    document.getElementById('imgPreview').style.display='block';
-    document.getElementById('toStep2').style.display='block';
-    document.getElementById('aiImgWrap').style.display='block';
-    document.getElementById('aiImg').src=proxyUrl;
-    document.getElementById('useAiBtn').style.display='none';
-    setAiStatus('✓ Готово! Перейди к гриду');
-    toast('AI картинка загружена!');
-  };
-  img.onerror=()=>{
-    setAiStatus('⚠ Загрузи картинку вручную');
-    const link=document.createElement('a');
-    link.href=url;link.target='_blank';link.textContent='Открыть картинку';
-    link.style.cssText='font-size:10px;color:var(--accent3);display:block;margin-top:4px;word-break:break-all';
-    document.getElementById('aiStatus').appendChild(link);
-  };
-  img.src=proxyUrl;
-}
-
-function useAiImage(){
-  const aiImg=document.getElementById('aiImg');
-  if(!aiImg.complete||!aiImg.naturalWidth){toast('Картинка ещё не загружена','err');return}
-  const oc=document.createElement('canvas');
-  oc.width=aiImg.naturalWidth;oc.height=aiImg.naturalHeight;
-  try {
-    oc.getContext('2d').drawImage(aiImg,0,0);
-    imgEl=aiImg;
-    document.getElementById('imgPreview').src=aiImg.src;
-    document.getElementById('imgPreview').style.display='block';
-    document.getElementById('toStep2').style.display='block';
-    toast('Картинка выбрана!');
-    goStep(2);
-  } catch(e){
-    loadAiImageViaCanvas(aiImageUrl||aiImg.src);
-  }
-}
-
-// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
-document.getElementById('fi').onchange=e=>loadFile(e.target.files[0]);
-const dz=document.getElementById('dropzone');
-dz.ondragover=e=>{e.preventDefault();dz.classList.add('drag')};
-dz.ondragleave=()=>dz.classList.remove('drag');
-dz.ondrop=e=>{e.preventDefault();dz.classList.remove('drag');loadFile(e.dataTransfer.files[0])};
-
-function loadFile(file){
-  if(!file)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{
-      imgEl=img;
-      const p=document.getElementById('imgPreview');
-      p.src=ev.target.result;p.style.display='block';
-      document.getElementById('emptyState').style.display='none';
-      document.getElementById('toStep2').style.display='block';
-      toast('Картинка загружена!');
-    };
-    img.src=ev.target.result;
-  };
-  r.readAsDataURL(file);
-}
-
-// ─── GRID ─────────────────────────────────────────────────────────────────────
-function getGrid(){
-  if(!imgEl)return null;
-  const gs=+document.getElementById('gs').value;
-  const thresh=+document.getElementById('th').value;
-  const inv=document.getElementById('inv').value==='1';
-  const asp=imgEl.naturalWidth/imgEl.naturalHeight;
-  let gw,gh;
-  if(asp>=1){gw=gs;gh=Math.max(3,Math.round(gs/asp))}
-  else{gh=gs;gw=Math.max(3,Math.round(gs*asp))}
-
-  const oc=document.createElement('canvas');
-  oc.width=gw;oc.height=gh;
-  const ctx=oc.getContext('2d');
-  ctx.drawImage(imgEl,0,0,gw,gh);
-  const px=ctx.getImageData(0,0,gw,gh).data;
-
-  // Detect background type by sampling corners + edges
-  const sampleAlphas=[px[3],px[(gw-1)*4+3],px[(gh-1)*gw*4+3],px[((gh-1)*gw+gw-1)*4+3]];
-  const transBg=sampleAlphas.some(a=>a<30);
-
-  // Sample background color from multiple corners for robustness
-  let bgR=0,bgG=0,bgB=0,bgCount=0;
-  const cornerPts=[[0,0],[gw-1,0],[0,gh-1],[gw-1,gh-1],[Math.floor(gw/2),0],[0,Math.floor(gh/2)]];
-  for(const[cx,cy] of cornerPts){
-    const ci=(cy*gw+cx)*4;
-    bgR+=px[ci];bgG+=px[ci+1];bgB+=px[ci+2];bgCount++;
-  }
-  bgR/=bgCount;bgG/=bgCount;bgB/=bgCount;
-  const bgBright=(bgR*0.299+bgG*0.587+bgB*0.114);
-  const lightBg=!transBg&&bgBright>160;
-
-  pixelMap={};
-  const cells=new Set();
-  let minB=255,maxB=0;
-
-  for(let row=0;row<gh;row++){
-    for(let col=0;col<gw;col++){
-      const i=(row*gw+col)*4;
-      const r2=px[i],g2=px[i+1],b2=px[i+2],a2=px[i+3];
-      const bright=r2*0.299+g2*0.587+b2*0.114;
-      const uy=(gh-1)-row;
-      pixelMap[col+'_'+uy]={r:r2,g:g2,b:b2,bright};
-      let inside;
-      if(transBg){
-        // Transparent bg: use alpha channel
-        inside=inv?(a2<30):(a2>thresh/2);
-      } else if(lightBg){
-        // Light bg: pixel is inside if it differs from bg by more than threshold
-        const diff=Math.abs(bright-bgBright);
-        inside=inv?(diff<thresh*0.3):(diff>thresh*0.3);
-      } else {
-        // Dark bg: pixel is inside if it's brighter than threshold
-        inside=inv?(bright<thresh):(bright>thresh);
-      }
-      if(inside){
-        cells.add(col+'_'+uy);
-        if(bright<minB)minB=bright;
-        if(bright>maxB)maxB=bright;
-      }
+// ─── DRAW: главный рендер редактора ─────────────────────────────────
+function editorRender() {
+  if (!editorState.active || !editorState.v) return;
+  const v = editorState.v;
+  const cv = document.getElementById('detailCanvas');
+  const wrap = cv.parentElement;
+  
+  // Compute cell px to fit the wrapper
+  const maxSide = Math.min(wrap.clientWidth, wrap.clientHeight);
+  const cell = Math.max(4, Math.floor(maxSide / Math.max(v.gw, v.gh)));
+  editorState.cellPx = cell;
+  
+  cv.width = v.gw * cell;
+  cv.height = v.gh * cell;
+  const ctx = cv.getContext('2d');
+  
+  // Background — полное поле грида
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  
+  // Подсветка силуэта — только для ориентира, не блокирует рисование
+  if (editorState.silSet && editorState.silSet.size) {
+    ctx.fillStyle = 'rgba(124,106,255,0.10)';
+    for (const k of editorState.silSet) {
+      const [c, r] = k.split('_').map(Number);
+      ctx.fillRect(c * cell, r * cell, cell, cell);
     }
   }
-  sil={cells,gw,gh,minB,maxB};
-  return sil;
-}
-
-function autoThreshold(){
-  // Auto-detect best threshold by analysing image contrast
-  if(!imgEl)return;
-  const gs=+document.getElementById('gs').value;
-  const asp=imgEl.naturalWidth/imgEl.naturalHeight;
-  let gw,gh;
-  if(asp>=1){gw=gs;gh=Math.max(3,Math.round(gs/asp))}
-  else{gh=gs;gw=Math.max(3,Math.round(gs*asp))}
-  const oc=document.createElement('canvas');
-  oc.width=gw;oc.height=gh;
-  const ctx=oc.getContext('2d');
-  ctx.drawImage(imgEl,0,0,gw,gh);
-  const px=ctx.getImageData(0,0,gw,gh).data;
-
-  // Collect all brightness values
-  const brights=[];
-  for(let i=0;i<px.length;i+=4){
-    brights.push(px[i]*0.299+px[i+1]*0.587+px[i+2]*0.114);
-  }
-  brights.sort((a,b)=>a-b);
-
-  // Check bg type from corners
-  const corners=[px[3],px[(gw-1)*4+3],px[(gh-1)*gw*4+3],px[((gh-1)*gw+gw-1)*4+3]];
-  const transBg=corners.some(a=>a<30);
-
-  let thresh;
-  if(transBg){
-    // Transparent: alpha-based, threshold not critical
-    thresh=128;
-  } else {
-    // Use Otsu-like method: find valley between two peaks
-    // Simple: use 30th percentile as threshold to keep fine details
-    const bgBright=brights[0]*0.299+brights[0]*0.587+brights[0]*0.114;
-    const c0bright=(px[0]*0.299+px[1]*0.587+px[2]*0.114);
-    const lightBg=c0bright>160;
-    if(lightBg){
-      // For light bg: set threshold so that 70% of pixels are excluded (bg)
-      thresh=Math.round(brights[Math.floor(brights.length*0.70)]);
-    } else {
-      // Dark bg: include top 40% brightest pixels
-      thresh=Math.round(brights[Math.floor(brights.length*0.60)]);
+  
+  // Grid lines (опционально)
+  if (editorState.showGrid && cell >= 6) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.5;
+    for (let c = 0; c <= v.gw; c++) {
+      ctx.beginPath(); ctx.moveTo(c * cell, 0); ctx.lineTo(c * cell, cv.height); ctx.stroke();
     }
-    thresh=Math.max(20,Math.min(230,thresh));
-  }
-  document.getElementById('th').value=thresh;
-  document.getElementById('thV').textContent=thresh;
-  renderGrid(false);
-  toast('Авто-порог: '+thresh);
-}
-
-function renderGrid(colorPreview){
-  if(!imgEl)return;
-  // Defer to next frame so canvasArea has correct dimensions
-  requestAnimationFrame(()=>_renderGrid(colorPreview));
-}
-function _renderGrid(colorPreview){
-  const res=getGrid();if(!res)return;
-  const{cells,gw,gh}=res;
-  const area=document.getElementById('canvasArea');
-  const maxW=area.clientWidth-40,maxH=area.clientHeight-40;
-  // No upper limit — fill the canvas area properly
-  const cell=Math.max(3,Math.floor(Math.min(maxW/gw,maxH/gh)));
-  const gap=cell>8?1:0; // gap between cells for detail when cell is large enough
-  const cv=document.getElementById('mainCanvas');
-  cv.width=gw*cell;cv.height=gh*cell;
-  const ctx=cv.getContext('2d');
-  ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,cv.width,cv.height);
-  cells.forEach(k=>{
-    const[x,y]=k.split('_').map(Number),sy=(gh-1-y)*cell;
-    if(colorPreview){
-      ctx.fillStyle=getZoneColor(k).hex;
-      ctx.fillRect(x*cell+gap,sy+gap,cell-gap,cell-gap);
-    } else {
-      ctx.fillStyle='#1e1e3a';ctx.fillRect(x*cell,sy,cell,cell);
-      ctx.fillStyle='#4a5aff';ctx.fillRect(x*cell+1,sy+1,cell-2,cell-2);
-    }
-  });
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('canvasWrap').style.display='block';
-  cellSize=cell;
-  initCanvasEditing();
-  const fill=Math.round(100*cells.size/(gw*gh));
-  document.getElementById('gridStats').innerHTML=`
-    <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
-    <div class="sc"><div class="val">${cells.size}</div><div class="lbl">ЯЧЕЕК</div></div>
-    <div class="sc"><div class="val">${fill}%</div><div class="lbl">ЗАПОЛНЕНИЕ</div></div>
-    <div class="sc"><div class="val">${cell}px</div><div class="lbl">ЯЧЕЙКА</div></div>`;
-  toast(colorPreview?'Цветной превью':'Силуэт готов!');
-}
-
-// ─── EDIT MODE ────────────────────────────────────────────────────────────────
-function setEditMode(mode){
-  editMode=mode;
-  const d=document.getElementById('editDraw');
-  const e=document.getElementById('editErase');
-  if(mode==='draw'){
-    d.style.cssText='padding:8px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(124,106,255,.12);color:var(--text)';
-    e.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
-    document.getElementById('mainCanvas').style.cursor='crosshair';
-  } else {
-    e.style.cssText='padding:8px;border-radius:8px;border:2px solid var(--accent2);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:rgba(255,107,157,.12);color:var(--text)';
-    d.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2)';
-    document.getElementById('mainCanvas').style.cursor='cell';
-
-  }
-}
-
-function getCellFromEvent(e){
-  if(!sil)return null;
-  const cv=document.getElementById('mainCanvas');
-  const rect=cv.getBoundingClientRect();
-  const scaleX=cv.width/rect.width;
-  const scaleY=cv.height/rect.height;
-  const px2=(e.clientX-rect.left)*scaleX;
-  const py2=(e.clientY-rect.top)*scaleY;
-  const x=Math.floor(px2/cellSize);
-  const y=Math.floor(py2/cellSize);
-  const{gw,gh}=sil;
-  if(x<0||x>=gw||y<0||y>=gh)return null;
-  const uy=(gh-1)-y;
-  return{x,y,uy,key:x+'_'+uy};
-}
-
-function editCell(e){
-  if(!sil)return;
-  const cell=getCellFromEvent(e);
-  if(!cell)return;
-  const{key,x}=cell;
-  if(editMode==='draw'){
-    sil.cells.add(key);
-    if(!pixelMap[key])pixelMap[key]={r:100,g:100,b:255,bright:150};
-  } else {
-    sil.cells.delete(key);
-  }
-  redrawCell(cell);
-  updateGridStats();
-}
-
-function redrawCell(cell){
-  const cv=document.getElementById('mainCanvas');
-  const ctx=cv.getContext('2d');
-  const{x,y,key}=cell;
-  const sy=y*cellSize;
-  ctx.fillStyle='#0d0d14';ctx.fillRect(x*cellSize,sy,cellSize,cellSize);
-  if(sil.cells.has(key)){
-    ctx.fillStyle='#1e1e3a';ctx.fillRect(x*cellSize,sy,cellSize,cellSize);
-    ctx.fillStyle='#4a5aff';ctx.fillRect(x*cellSize+1,sy+1,cellSize-2,cellSize-2);
-  }
-}
-
-function updateGridStats(){
-  if(!sil)return;
-  const{gw,gh,cells}=sil;
-  const fill=Math.round(100*cells.size/(gw*gh));
-  document.getElementById('gridStats').innerHTML=`
-    <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
-    <div class="sc"><div class="val">${cells.size}</div><div class="lbl">ЯЧЕЕК</div></div>
-    <div class="sc"><div class="val">${fill}%</div><div class="lbl">ЗАПОЛНЕНИЕ</div></div>
-    <div class="sc"><div class="val">${cellSize}px</div><div class="lbl">ЯЧЕЙКА</div></div>`;
-}
-
-let _canvasListenersAdded=false;
-function initCanvasEditing(){
-  if(_canvasListenersAdded)return;
-  _canvasListenersAdded=true;
-  const cv=document.getElementById('mainCanvas');
-  cv.style.cursor='crosshair';
-  cv.addEventListener('mousedown',e=>{
-    if(e.button!==0)return;
-    isDrawing=true;editCell(e);e.preventDefault();
-  });
-  cv.addEventListener('mousemove',e=>{if(!isDrawing)return;editCell(e);});
-  cv.addEventListener('mouseup',()=>isDrawing=false);
-  cv.addEventListener('mouseleave',()=>isDrawing=false);
-  cv.addEventListener('contextmenu',e=>{
-    e.preventDefault();
-    const prev=editMode;editMode='erase';editCell(e);editMode=prev;
-  });
-}
-
-// ─── ZONE COLOR ───────────────────────────────────────────────────────────────
-function getActivePalette(){
-  if(colorMode==='scheme') return activeScheme.colors.map(i=>GCOLS[i]);
-  const sel=[];
-  document.querySelectorAll('.cpick-cell.sel').forEach(el=>{
-    if(el.dataset.idx!==undefined)sel.push(GCOLS[+el.dataset.idx]);
-  });
-  return sel.length>=2?sel:activeScheme.colors.map(i=>GCOLS[i]);
-}
-
-function getZoneColor(cellKey){
-  if(!pixelMap||!sil)return GCOLS[0];
-  const pm=pixelMap[cellKey];if(!pm)return GCOLS[0];
-  const pal=getActivePalette();
-  const range=Math.max(1,sil.maxB-sil.minB);
-  const norm=(pm.bright-sil.minB)/range;
-  const idx=Math.min(pal.length-1,Math.floor(norm*pal.length));
-  return pal[idx];
-}
-
-function getPathColor(path){
-  if(!pixelMap||!path.length)return GCOLS[0];
-  let tot=0,cnt=0;
-  path.forEach(([x,y])=>{const pm=pixelMap[x+'_'+y];if(pm){tot+=pm.bright;cnt++}});
-  if(!cnt)return GCOLS[0];
-  const pal=getActivePalette();
-  const range=Math.max(1,sil.maxB-sil.minB);
-  const norm=(tot/cnt-sil.minB)/range;
-  const idx=Math.min(pal.length-1,Math.floor(norm*pal.length));
-  return pal[idx];
-}
-
-// ─── PATH BUILDERS ────────────────────────────────────────────────────────────
-
-function sampleLen(mn, mx, shortPct) {
-  // shortPct% → tiny path (mn .. mn+2)
-  if(Math.random() < shortPct/100)
-    return Math.max(mn, Math.min(mx, mn + Math.floor(Math.random()*3)));
-
-  // Remaining budget split into 3 bands proportionally to real prefab data:
-  // 4-8 cells: ~45%,  9-16: ~25%,  17-max: ~30% (long paths exist!)
-  const span = mx - mn;
-  const r = Math.random();
-  let l;
-  if(span <= 3) {
-    l = mn + Math.floor(Math.random()*(span+1));
-  } else if(r < 0.45) {
-    // Short-medium: mn+1 .. min(8, mx)
-    const lo = mn+1, hi = Math.min(8, mx);
-    l = lo + Math.floor(Math.random()*Math.max(1, hi-lo+1));
-  } else if(r < 0.70) {
-    // Medium: 9 .. min(16, mx)
-    const lo = Math.max(mn, 9), hi = Math.min(16, mx);
-    l = lo + Math.floor(Math.random()*Math.max(1, hi-lo+1));
-  } else if(r < 0.88) {
-    // Long: 17 .. min(30, mx)
-    const lo = Math.max(mn, 17), hi = Math.min(30, mx);
-    l = lo + Math.floor(Math.random()*Math.max(1, hi-lo+1));
-  } else {
-    // Very long: 31..mx (rare, only if mx allows)
-    const lo = Math.max(mn, 31), hi = mx;
-    l = lo + Math.floor(Math.random()*Math.max(1, hi-lo+1));
-  }
-  return Math.max(mn, Math.min(mx, l));
-}
-
-// Snake: alternates horisontal runs with vertical steps
-// hAxis: primary axis 0=horiz 1=vert — randomized per call for variety
-function trySnake(sx, sy, len, cells, used, gw, gh) {
-  // Randomly choose whether snake goes H-first or V-first
-  const hFirst = Math.random() < 0.5;
-  // Random step directions
-  const hd = Math.random()<.5 ? 1 : -1;
-  const vd = Math.random()<.5 ? 1 : -1;
-  let path = [[sx,sy]];
-  let goingH = hFirst;
-  // How many steps in current run before turning
-  let runLen = 1 + Math.floor(Math.random()*4);
-  let runLeft = runLen;
-
-  while(path.length < len) {
-    const [cx,cy] = path[path.length-1];
-    let nx, ny;
-    if(goingH) { nx=cx+hd; ny=cy; }
-    else        { nx=cx;    ny=cy+vd; }
-    const nk = nx+'_'+ny;
-    if(cells.has(nk) && !used.has(nk) && nx>=0 && nx<gw && ny>=0 && ny<gh) {
-      path.push([nx,ny]);
-      runLeft--;
-      if(runLeft <= 0) {
-        goingH = !goingH;
-        runLen = 1 + Math.floor(Math.random()*4);
-        runLeft = runLen;
-      }
-    } else {
-      // Can't continue — try switching axis
-      goingH = !goingH;
-      runLen = 1 + Math.floor(Math.random()*4);
-      runLeft = runLen;
-      const [cx2,cy2] = path[path.length-1];
-      let nx2, ny2;
-      if(goingH) { nx2=cx2+hd; ny2=cy2; }
-      else        { nx2=cx2;    ny2=cy2+vd; }
-      const nk2 = nx2+'_'+ny2;
-      if(cells.has(nk2) && !used.has(nk2) && nx2>=0 && nx2<gw && ny2>=0 && ny2<gh) {
-        path.push([nx2,ny2]);
-        runLeft--;
-      } else break;
+    for (let r = 0; r <= v.gh; r++) {
+      ctx.beginPath(); ctx.moveTo(0, r * cell); ctx.lineTo(cv.width, r * cell); ctx.stroke();
     }
   }
-  return path.length >= 2 ? path : null;
-}
-
-// Zigzag: strict alternation of two perpendicular directions
-function tryZigzag(sx, sy, len, cells, used, gw, gh) {
-  // Pick two perpendicular directions randomly
-  const allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  const d1 = allDirs[Math.floor(Math.random()*4)];
-  const perps = allDirs.filter(d => d[0]*d1[0]+d[1]*d1[1] === 0);
-  const d2 = perps[Math.floor(Math.random()*perps.length)];
-  let path = [[sx,sy]];
-  let useD1 = true;
-  while(path.length < len) {
-    const [cx,cy] = path[path.length-1];
-    const d = useD1 ? d1 : d2;
-    const nx=cx+d[0], ny=cy+d[1], nk=nx+'_'+ny;
-    if(cells.has(nk) && !used.has(nk) && nx>=0 && nx<gw && ny>=0 && ny<gh) {
-      path.push([nx,ny]);
-      useD1 = !useD1;
-    } else break;
-  }
-  return path.length >= 2 ? path : null;
-}
-
-// Straight: picks best direction, tries all 4 in random order
-function tryStraight(sx, sy, len, cells, used, gw, gh) {
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]].sort(()=>Math.random()-.5);
-  let best = null;
-  for(const d of dirs) {
-    let p = [[sx,sy]];
-    for(let i=1; i<len; i++) {
-      const [cx,cy]=p[p.length-1], nx=cx+d[0], ny=cy+d[1], nk=nx+'_'+ny;
-      if(cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh) p.push([nx,ny]);
-      else break;
+  
+  // Arrows
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const arrow of editorState.arrows) {
+    const path = arrow._path;
+    if (!path || !path.length) continue;
+    const col = arrow._hex || '#00E5FF';
+    
+    if (path.length === 1) {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(path[0][0] * cell + cell/2, path[0][1] * cell + cell/2, cell * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
     }
-    if(p.length>=2 && (!best||p.length>best.length)) best=p;
-  }
-  return best;
-}
-
-// L-shape: two legs in perpendicular directions, random split point
-function tryL(sx, sy, len, cells, used, gw, gh) {
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  // Try all 12 combos of perpendicular directions
-  const combos = [];
-  for(const d1 of dirs)
-    for(const d2 of dirs)
-      if(d1[0]*d2[0]+d1[1]*d2[1]===0) combos.push([d1,d2]);
-  // Shuffle
-  combos.sort(()=>Math.random()-.5);
-  for(const [d1,d2] of combos) {
-    const split = 1 + Math.floor(Math.random()*(len-1));
-    let p = [[sx,sy]];
-    for(let i=0;i<split;i++){
-      const [cx,cy]=p[p.length-1],nx=cx+d1[0],ny=cy+d1[1],nk=nx+'_'+ny;
-      if(cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh) p.push([nx,ny]); else break;
-    }
-    for(let i=0;i<len-split;i++){
-      const [cx,cy]=p[p.length-1],nx=cx+d2[0],ny=cy+d2[1],nk=nx+'_'+ny;
-      if(cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh) p.push([nx,ny]); else break;
-    }
-    if(p.length>=3) return p;
-  }
-  return null;
-}
-
-// Greedy walk: at each step picks a random free neighbor (most variety)
-function tryGreedy(sx, sy, len, cells, used, gw, gh) {
-  let path = [[sx,sy]];
-  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  while(path.length < len) {
-    const [cx,cy] = path[path.length-1];
-    const free = dirs
-      .map(([dx,dy])=>{ const nx=cx+dx,ny=cy+dy,nk=nx+'_'+ny; return cells.has(nk)&&!used.has(nk)&&nx>=0&&nx<gw&&ny>=0&&ny<gh?[nx,ny]:null; })
-      .filter(Boolean);
-    if(!free.length) break;
-    const next = free[Math.floor(Math.random()*free.length)];
-    path.push(next);
-    // Temporarily mark to avoid revisiting in this path
-    used.add(next[0]+'_'+next[1]);
-  }
-  // Unmark the temporary marks (only the ones we added)
-  for(let i=1;i<path.length;i++) used.delete(path[i][0]+'_'+path[i][1]);
-  return path.length >= 2 ? path : null;
-}
-
-function buildPath(sx, sy, len, cells, used, gw, gh) {
-  const params = getGenParams();
-  const r = Math.random() * 100;
-  const s = params.snakePct;
-  const st = s + params.straightPct;
-  const l = st + params.lPct;
-  let p;
-  if     (r < s)  p = trySnake(sx,sy,len,cells,used,gw,gh);
-  else if(r < st) p = tryStraight(sx,sy,len,cells,used,gw,gh);
-  else if(r < l)  p = tryL(sx,sy,len,cells,used,gw,gh);
-  else            p = tryZigzag(sx,sy,len,cells,used,gw,gh);
-  // Fallback chain — try everything
-  if(!p) p = trySnake(sx,sy,len,cells,used,gw,gh);
-  if(!p) p = tryL(sx,sy,len,cells,used,gw,gh);
-  if(!p) p = tryStraight(sx,sy,len,cells,used,gw,gh);
-  if(!p) p = tryGreedy(sx,sy,len,cells,used,gw,gh);
-  return p || [];
-}
-
-// ─── GENERATE ARROWS ─────────────────────────────────────────────────────────
-function generateArrows() {
-  if(!sil){renderGrid(false);return}
-  const {cells,gw,gh} = sil;
-  const params = getGenParams();
-  const mn = params.minLen;
-  const mx = params.maxLen;
-  const shortPct = params.shortPct;
-  const unassigned = new Set(cells);
-  const used = new Set();
-  arrows = [];
-  let iters = 0;
-
-  // Build start-cell ordering — NOT always top-left scan.
-  // Shuffle regions to get varied starts across the silhouette.
-  function pickStartCell() {
-    if(unassigned.size === 0) return null;
-    // 40% chance: pick truly random cell (breaks ring pattern)
-    // 60% chance: pick topmost-leftmost (good for coverage)
-    if(Math.random() < 0.40) {
-      const arr = Array.from(unassigned);
-      return arr[Math.floor(Math.random()*arr.length)];
-    }
-    let sk=null, bY=-1, bX=9999;
-    for(const k of unassigned){
-      const [kx,ky]=k.split('_').map(Number);
-      if(ky>bY||(ky===bY&&kx<bX)){bY=ky;bX=kx;sk=k}
-    }
-    return sk;
-  }
-
-  while(unassigned.size > 0 && iters++ < cells.size*8) {
-    const sk = pickStartCell();
-    if(!sk) break;
-    const [sx,sy] = sk.split('_').map(Number);
-    const rem = unassigned.size;
-    const tlen = rem<=mn ? rem : Math.min(sampleLen(mn,mx,shortPct), rem);
-    const path = buildPath(sx,sy,tlen,cells,used,gw,gh);
-
-    let valid = [];
-    for(const [px,py] of path) {
-      const k = px+'_'+py;
-      if(unassigned.has(k)) {valid.push([px,py]); unassigned.delete(k); used.add(k);}
-      else break;
-    }
-
-    // Extend lone cells
-    if(valid.length === 1) {
-      const [ox,oy] = valid[0];
-      let ext = false;
-      const extDirs = [[1,0],[-1,0],[0,1],[0,-1]].sort(()=>Math.random()-.5);
-      for(const [dx,dy] of extDirs) {
-        const nk=(ox+dx)+'_'+(oy+dy);
-        if(unassigned.has(nk)){valid.push([ox+dx,oy+dy]);unassigned.delete(nk);used.add(nk);ext=true;break}
-      }
-      if(!ext && rem>1) {
-        let merged = false;
-        for(const a of arrows) {
-          const [lx,ly] = a._path[a._path.length-1];
-          if(Math.abs(lx-ox)+Math.abs(ly-oy)===1){a._path.push([ox,oy]);a.Indices.push(oy*gw+ox);merged=true;break}
-        }
-        if(!merged) valid = [valid[0]];
-      }
-    }
-
-    if(valid.length > 0) {
-      const col = getPathColor(valid);
-      arrows.push({Indices:valid.map(([px,py])=>py*gw+px), color:col.u, _hex:col.hex, _path:valid});
-    }
-  }
-
-  // Cleanup remaining orphans
-  for(const k of unassigned) {
-    const [px,py] = k.split('_').map(Number);
-    let merged = false;
-    for(const a of arrows) {
-      const [lx,ly] = a._path[a._path.length-1];
-      if(Math.abs(lx-px)+Math.abs(ly-py)===1){a._path.push([px,py]);a.Indices.push(py*gw+px);merged=true;break}
-    }
-    if(!merged){const col=getPathColor([[px,py]]);arrows.push({Indices:[py*gw+px],color:col.u,_hex:col.hex,_path:[[px,py]]})}
-  }
-
-  const seen=new Map();let ov=0;
-  arrows.forEach((a,i)=>a.Indices.forEach(idx=>{if(seen.has(idx))ov++;else seen.set(idx,i)}));
-  const sing=arrows.filter(a=>a.Indices.length===1).length;
-  const total=arrows.reduce((s,a)=>s+a.Indices.length,0);
-  const avg=(total/arrows.length).toFixed(1);
-
-  document.getElementById('arrowStats').innerHTML=`
-    <div class="sc"><div class="val">${arrows.length}</div><div class="lbl">СТРЕЛОК</div></div>
-    <div class="sc"><div class="val">${total}</div><div class="lbl">ЯЧЕЕК</div></div>
-    <div class="sc"><div class="val">${avg}</div><div class="lbl">СРЕДН. ПУТЬ</div></div>
-    <div class="sc"><div class="val">${ov}</div><div class="lbl">ПЕРЕКРЫТИЙ</div></div>`;
-
-  let vhtml='';
-  if(ov===0&&sing===0){
-    vhtml='<div class="ok-box">✓ Валидация пройдена!</div>';
-  } else {
-    vhtml=`<div class="warn-box">⚠ Перекрытий: ${ov} · Одиночных: ${sing}</div>`;
-  }
-  // Show mode info
-  if(genMode==='auto'){
-    const p=DIFF[currentDifficulty];
-    vhtml+=`<div class="info-box" style="margin-top:4px;font-size:10px">`+
-      `<b style="color:${p.color}">${p.label}</b> · snake ${params.snakePct}% · straight ${params.straightPct}% · L ${params.lPct}%<br>`+
-      `short paths ${params.shortPct}% · len ${params.minLen}–${params.maxLen}</div>`;
-  }
-  document.getElementById('vbox').innerHTML=vhtml;
-  drawArrows();
-  toast(`${arrows.length} стрелок сгенерировано`);
-}
-
-function drawArrows(){
-  const{gw,gh}=sil;
-  const area=document.getElementById('canvasArea');
-  const maxW=area.clientWidth-40,maxH=area.clientHeight-40;
-  const cell=Math.max(3,Math.floor(Math.min(maxW/gw,maxH/gh)));
-  const cv=document.getElementById('mainCanvas');
-  cv.width=gw*cell;cv.height=gh*cell;
-  const ctx=cv.getContext('2d');
-  ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,cv.width,cv.height);
-  arrows.forEach(arrow=>{
-    const pts=arrow._path,col=arrow._hex||'#00E5FF';
-    if(!pts||!pts.length)return;
-    if(pts.length===1){
-      const[px,py]=pts[0];
-      ctx.fillStyle=col;ctx.beginPath();
-      ctx.arc(px*cell+cell/2,(gh-1-py)*cell+cell/2,cell*.3,0,Math.PI*2);ctx.fill();
-      return;
-    }
-    ctx.strokeStyle=col;ctx.lineWidth=Math.max(1.5,cell*.4);
-    ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
-    pts.forEach(([px,py],i)=>{
-      const x2=px*cell+cell/2,y2=(gh-1-py)*cell+cell/2;
-      i===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2);
+    
+    ctx.strokeStyle = col;
+    ctx.lineWidth = Math.max(1.5, cell * 0.4);
+    ctx.beginPath();
+    path.forEach(([cx, ry], i) => {
+      const x = cx * cell + cell / 2;
+      const y = ry * cell + cell / 2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.stroke();
-    const[lx,ly]=pts[pts.length-1],[px2,py2]=pts[pts.length-2];
-    const ex=lx*cell+cell/2,ey=(gh-1-ly)*cell+cell/2;
-    const fx=px2*cell+cell/2,fy=(gh-1-py2)*cell+cell/2;
-    const ang=Math.atan2(ey-fy,ex-fx),as=Math.max(4,cell*.5);
-    ctx.fillStyle=col;ctx.beginPath();
-    ctx.moveTo(ex+Math.cos(ang)*as,ey+Math.sin(ang)*as);
-    ctx.lineTo(ex+Math.cos(ang+2.5)*as*.55,ey+Math.sin(ang+2.5)*as*.55);
-    ctx.lineTo(ex+Math.cos(ang-2.5)*as*.55,ey+Math.sin(ang-2.5)*as*.55);
-    ctx.closePath();ctx.fill();
+    
+    // Arrowhead
+    if (cell >= 4) {
+      const [lx, ly] = path[path.length - 1];
+      const [px, py] = path[path.length - 2];
+      const ex = lx * cell + cell / 2, ey = ly * cell + cell / 2;
+      const fx = px * cell + cell / 2, fy = py * cell + cell / 2;
+      const ang = Math.atan2(ey - fy, ex - fx);
+      const as = Math.max(3, cell * 0.55);
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(ex + Math.cos(ang) * as, ey + Math.sin(ang) * as);
+      ctx.lineTo(ex + Math.cos(ang + 2.5) * as * 0.55, ey + Math.sin(ang + 2.5) * as * 0.55);
+      ctx.lineTo(ex + Math.cos(ang - 2.5) * as * 0.55, ey + Math.sin(ang - 2.5) * as * 0.55);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  
+  // Draw-in-progress preview
+  if (editorState.drawing && editorState.drawPath.length >= 1) {
+    const path = editorState.drawPath;
+    ctx.strokeStyle = '#00FFC8';
+    ctx.fillStyle = 'rgba(0,255,200,0.4)';
+    ctx.lineWidth = Math.max(2, cell * 0.45);
+    if (path.length >= 2) {
+      ctx.beginPath();
+      path.forEach(([cx, ry], i) => {
+        const x = cx * cell + cell/2, y = ry * cell + cell/2;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+    // Highlight cells
+    for (const [c, r] of path) {
+      ctx.fillStyle = 'rgba(0,255,200,0.25)';
+      ctx.fillRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2);
+    }
+  }
+  
+  // Update stats
+  updateEditorStats();
+}
+
+function updateEditorStats() {
+  const v = editorState.v;
+  const arrows = editorState.arrows;
+  const totalCells = arrows.reduce((s, a) => s + a._path.length, 0);
+  const singleCells = arrows.filter(a => a._path.length === 1).length;
+  
+  // Check head-to-head (TZ §5.1)
+  // Build a map: cell -> arrows that have head there
+  const headMap = new Map();
+  for (let ai = 0; ai < arrows.length; ai++) {
+    const path = arrows[ai]._path;
+    if (path.length < 2) continue;
+    const [hx, hy] = path[path.length - 1];
+    const [px, py] = path[path.length - 2];
+    // Direction the head is FACING (away from previous cell)
+    const dx = hx - px, dy = hy - py;
+    const facingCell = `${hx + dx}_${hy + dy}`;
+    if (!headMap.has(facingCell)) headMap.set(facingCell, []);
+    headMap.get(facingCell).push(ai);
+  }
+  // Count head-to-head: two arrows pointing at each other's heads
+  let h2h = 0;
+  for (let ai = 0; ai < arrows.length; ai++) {
+    const path = arrows[ai]._path;
+    if (path.length < 2) continue;
+    const [hx, hy] = path[path.length - 1];
+    const candidates = headMap.get(`${hx}_${hy}`) || [];
+    for (const bi of candidates) {
+      if (bi === ai) continue;
+      const bpath = arrows[bi]._path;
+      if (bpath.length < 2) continue;
+      const [bhx, bhy] = bpath[bpath.length - 1];
+      const [bpx, bpy] = bpath[bpath.length - 2];
+      const bdx = bhx - bpx, bdy = bhy - bpy;
+      // Does b's head face this arrow's head?
+      if (bhx + bdx === hx && bhy + bdy === hy) {
+        h2h++;
+      }
+    }
+  }
+  h2h = h2h / 2; // pairs counted twice
+  
+  document.getElementById('detailStats').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px 18px">
+      <div><b>${v.sizeKey}</b> грид · <b>${v.gw * v.gh}</b> клеток</div>
+      <div>Силуэт: <b>${editorState.silSet ? editorState.silSet.size : '—'}</b> клеток</div>
+      <div>Стрелок: <b>${arrows.length}</b> · ячеек <b>${totalCells}</b></div>
+      <div class="${h2h === 0 ? 'ok' : 'err'}">Head-to-head: <b>${h2h}</b></div>
+      <div class="${singleCells === 0 ? 'ok' : 'err'}">Одиночных: <b>${singleCells}</b></div>
+      <div>Сложность: <b style="color:var(--accent3)">${(v.cls || '').toUpperCase()}</b></div>
+    </div>
+  `;
+}
+
+// ─── INTERACTION: click → cell ───────────────────────────────────────
+function evtToCell(evt) {
+  const cv = document.getElementById('detailCanvas');
+  const rect = cv.getBoundingClientRect();
+  const scaleX = cv.width / rect.width;
+  const scaleY = cv.height / rect.height;
+  const x = (evt.clientX - rect.left) * scaleX;
+  const y = (evt.clientY - rect.top) * scaleY;
+  const cell = editorState.cellPx;
+  const c = Math.floor(x / cell), r = Math.floor(y / cell);
+  if (c < 0 || c >= editorState.v.gw || r < 0 || r >= editorState.v.gh) return null;
+  return { c, r };
+}
+
+function findArrowAtCell(c, r) {
+  for (let i = editorState.arrows.length - 1; i >= 0; i--) {
+    const path = editorState.arrows[i]._path;
+    if (path.some(([pc, pr]) => pc === c && pr === r)) return i;
+  }
+  return -1;
+}
+
+function pathToIndices(path, gw) {
+  return path.map(([c, r]) => r * gw + c);
+}
+
+// Tool: DRAW
+function onDrawStart(evt) {
+  evt.preventDefault();
+  const pos = evtToCell(evt);
+  if (!pos) return;
+  editorState.drawing = true;
+  editorState.drawPath = [[pos.c, pos.r]];
+  editorRender();
+}
+function onDrawMove(evt) {
+  if (!editorState.drawing) return;
+  const pos = evtToCell(evt);
+  if (!pos) return;
+  const last = editorState.drawPath[editorState.drawPath.length - 1];
+  if (!last) return;
+  // Manhattan dist == 1
+  const dist = Math.abs(pos.c - last[0]) + Math.abs(pos.r - last[1]);
+  if (dist !== 1) return;
+  // Backtrack: if cursor returned to earlier cell, truncate
+  const idx = editorState.drawPath.findIndex(([c, r]) => c === pos.c && r === pos.r);
+  if (idx >= 0) {
+    editorState.drawPath = editorState.drawPath.slice(0, idx + 1);
+  } else {
+    editorState.drawPath.push([pos.c, pos.r]);
+  }
+  editorRender();
+}
+function onDrawEnd(evt) {
+  if (!editorState.drawing) return;
+  editorState.drawing = false;
+  const path = editorState.drawPath.slice();
+  editorState.drawPath = [];
+  if (path.length < 2) {
+    editorRender();
+    return;
+  }
+  // Trim to free cells (avoid intersect)
+  const occupied = new Set();
+  for (const a of editorState.arrows) {
+    for (const [c, r] of a._path) occupied.add(c + '_' + r);
+  }
+  const free = [];
+  for (const [c, r] of path) {
+    if (occupied.has(c + '_' + r)) break;
+    free.push([c, r]);
+  }
+  if (free.length < 2) {
+    toast('Все клетки заняты', 'err');
+    editorRender();
+    return;
+  }
+  editorPushHistory();
+  const col = pickColorForPath(free, editorState.schemeIdx);
+  editorState.arrows.push({
+    _path: free,
+    Indices: pathToIndices(free, editorState.v.gw),
+    color: (col.hex.replace('#','') + 'FF').toUpperCase(),
+    _hex: col.hex
   });
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('canvasWrap').style.display='block';
+  editorRender();
+  toast(`✓ Стрелка ${free.length} клеток`, 'ok');
 }
 
-// ─── SCHEME UI ────────────────────────────────────────────────────────────────
-function buildSchemeGrid(){
-  const g=document.getElementById('schemeGrid');g.innerHTML='';
-  SCHEMES.forEach(s=>{
-    const d=document.createElement('div');
-    d.className='scheme-card'+(s===activeScheme?' active':'');
-    const dots=s.colors.map(ci=>`<div class="sdot" style="background:${GCOLS[ci].hex}"></div>`).join('');
-    d.innerHTML=`<div class="scheme-dots">${dots}</div><div class="scheme-name">${s.name}</div>`;
-    d.onclick=()=>{
-      activeScheme=s;
-      document.querySelectorAll('.scheme-card').forEach(c=>c.classList.remove('active'));
-      d.classList.add('active');
-      if(arrows.length)drawArrows();
-    };
-    g.appendChild(d);
+// Tool: DELETE
+function onDeleteClick(evt) {
+  const pos = evtToCell(evt);
+  if (!pos) return;
+  const idx = findArrowAtCell(pos.c, pos.r);
+  if (idx < 0) {
+    toast('Стрелка не найдена');
+    return;
+  }
+  editorPushHistory();
+  editorState.arrows.splice(idx, 1);
+  editorRender();
+  toast('🗑 Удалена', 'ok');
+}
+
+// Tool: REVERSE
+function onReverseClick(evt) {
+  const pos = evtToCell(evt);
+  if (!pos) return;
+  const idx = findArrowAtCell(pos.c, pos.r);
+  if (idx < 0) {
+    toast('Стрелка не найдена');
+    return;
+  }
+  const a = editorState.arrows[idx];
+  if (a._path.length < 2) {
+    toast('Слишком короткая', 'err');
+    return;
+  }
+  editorPushHistory();
+  a._path = a._path.slice().reverse();
+  a.Indices = pathToIndices(a._path, editorState.v.gw);
+  editorRender();
+  toast('↔ Реверс', 'ok');
+}
+
+// ─── TOOL SELECTION ──────────────────────────────────────────────────
+function setEditorTool(tool) {
+  editorState.tool = tool;
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b => {
+    b.classList.toggle('active', b.dataset.tool === tool);
   });
+  const cv = document.getElementById('detailCanvas');
+  if (tool === 'view') cv.style.cursor = 'default';
+  else if (tool === 'draw') cv.style.cursor = 'crosshair';
+  else if (tool === 'delete') cv.style.cursor = 'not-allowed';
+  else if (tool === 'reverse') cv.style.cursor = 'pointer';
+  
+  const hints = {
+    view: 'Просмотр. Кликни инструмент чтобы редактировать.',
+    draw: 'РИСОВАНИЕ. Зажми ЛКМ и веди по гриду — рисуй стрелку. Можно рисовать ВЕЗДЕ на поле, не только по силуэту.',
+    delete: 'УДАЛЕНИЕ. Кликни на стрелку чтобы удалить её.',
+    reverse: 'РЕВЕРС. Кликни на стрелку чтобы развернуть её направление.',
+  };
+  document.getElementById('editorHint').textContent = hints[tool] || '';
 }
 
-function randomScheme(){
-  const idx=[...Array(14).keys()];
-  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
-  activeScheme={name:'Рандом',colors:[idx[0],idx[1],idx[2]]};
-  buildSchemeGrid();
-  if(arrows.length)drawArrows();
-  toast('Новая схема!');
+// ─── EXPORT ──────────────────────────────────────────────────────────
+function flipIndexY(idx, gw, gh) {
+  const row = Math.floor(idx / gw);
+  const col = idx % gw;
+  return (gh - 1 - row) * gw + col;
 }
 
-function buildCpickGrid(){
-  const g=document.getElementById('cpickGrid');g.innerHTML='';
-  GCOLS.forEach((c,i)=>{
-    const d=document.createElement('div');
-    d.className='cpick-cell';
-    d.dataset.idx=i;
-    d.style.background=c.hex;
-    d.onclick=()=>{d.classList.toggle('sel');if(arrows.length)drawArrows();};
-    g.appendChild(d);
+function buildLevel() {
+  const v = editorState.v;
+  // Filter out single-cell arrows (Unity garbage dots)
+  const valid = editorState.arrows.filter(a => a._path.length >= 2);
+  return {
+    XSize: v.gw,
+    YSize: v.gh,
+    Arrows: valid.map(a => ({
+      // Y-flip + REVERSE: Unity renders row=0 at BOTTOM, reads Indices[0] as HEAD
+      Indices: a.Indices.map(idx => flipIndexY(idx, v.gw, v.gh)).reverse(),
+      color: a.color,
+      isCollected: false,
+      isClicked: false
+    }))
+  };
+}
+
+function buildPrefab(level, name) {
+  const s = JSON.stringify(level).replace(/'/g, "''");
+  return `%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &6658644906848311588
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6007291936790831287, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: jsonString
+      value: '${s}'
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552869564571161296, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+      propertyPath: m_Name
+      value: ${name}
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}
+`;
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function getExportName() {
+  let name = (document.getElementById('exportName').value || '').trim();
+  if (!name) name = 'Level_studio_HM';
+  name = name.replace(/\.(prefab|json)$/i, '');
+  return name;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CARD SELECTION → open editor
+// ═══════════════════════════════════════════════════════════════════
+function selectCard(idx) {
+  selectedIdx = idx;
+  const cards = document.querySelectorAll('.card');
+  cards.forEach((c, i) => c.classList.toggle('selected', i === idx));
+  
+  const v = currentVariants[idx];
+  if (!v) return;
+  
+  // Init editor state
+  editorState.active = true;
+  editorState.variantIdx = idx;
+  editorState.v = v;
+  editorState.history = [];
+  editorState.drawing = false;
+  editorState.drawPath = [];
+  editorState.tool = 'view';
+  
+  // Deep-copy arrows so editing doesn't mutate original card
+  editorState.arrows = v.arrows.map(a => ({
+    _path: (a._path || []).map(p => [p[0], p[1]]),
+    Indices: (a.Indices || []).slice(),
+    color: a.color,
+    _hex: a._hex || ('#' + (a.color || '00E5FFFF').slice(0, 6))
+  }));
+  
+  // Silhouette set for highlight
+  editorState.silSet = new Set(v.silCellsArr || []);
+  
+  // Open detail panel
+  document.getElementById('detail').classList.add('show');
+  
+  // Default tool
+  setEditorTool('view');
+  
+  // Render after layout settles
+  requestAnimationFrame(() => {
+    editorRender();
   });
+  
+  document.getElementById('detail').scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
 
-function cpickAll(){document.querySelectorAll('.cpick-cell').forEach(d=>d.classList.add('sel'));if(arrows.length)drawArrows()}
-function cpickNone(){document.querySelectorAll('.cpick-cell').forEach(d=>d.classList.remove('sel'))}
+// ═══════════════════════════════════════════════════════════════════
+// CANVAS EVENT WIRING
+// ═══════════════════════════════════════════════════════════════════
+(function wireCanvas() {
+  const cv = document.getElementById('detailCanvas');
+  if (!cv) return;
+  
+  cv.addEventListener('mousedown', (e) => {
+    if (!editorState.active) return;
+    if (e.button !== 0) return; // left only
+    if (editorState.tool === 'draw') onDrawStart(e);
+    else if (editorState.tool === 'delete') onDeleteClick(e);
+    else if (editorState.tool === 'reverse') onReverseClick(e);
+  });
+  cv.addEventListener('mousemove', (e) => {
+    if (!editorState.active) return;
+    if (editorState.tool === 'draw') onDrawMove(e);
+  });
+  cv.addEventListener('mouseup', (e) => {
+    if (!editorState.active) return;
+    if (editorState.tool === 'draw') onDrawEnd(e);
+  });
+  cv.addEventListener('mouseleave', (e) => {
+    if (editorState.drawing) onDrawEnd(e);
+  });
+  cv.addEventListener('contextmenu', (e) => e.preventDefault());
+})();
 
-// ─── EXPORT ───────────────────────────────────────────────────────────────────
-function buildLevel(){
-  const{gw,gh}=sil;
-  return{XSize:gw,YSize:gh,Arrows:arrows.map(a=>({Indices:a.Indices,color:a.color,isCollected:false,isClicked:false}))};
+// Toolbar events
+document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+  btn.addEventListener('click', () => setEditorTool(btn.dataset.tool));
+});
+document.getElementById('toolRecolor').addEventListener('click', () => {
+  if (!editorState.active || !editorState.arrows.length) return;
+  editorPushHistory();
+  recolorAllArrows();
+});
+document.getElementById('schemeSelect').addEventListener('change', (e) => {
+  editorState.schemeIdx = parseInt(e.target.value, 10) || 0;
+  if (editorState.active && editorState.arrows.length) {
+    editorPushHistory();
+    recolorAllArrows();
+  }
+});
+document.getElementById('toolUndo').addEventListener('click', editorUndo);
+document.getElementById('toolGrid').addEventListener('click', () => {
+  editorState.showGrid = !editorState.showGrid;
+  editorRender();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (!editorState.active) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    editorUndo();
+  } else if (e.key === '1') setEditorTool('view');
+  else if (e.key === '2') setEditorTool('draw');
+  else if (e.key === '3') setEditorTool('delete');
+  else if (e.key === '4') setEditorTool('reverse');
+});
+
+// Window resize → re-render
+window.addEventListener('resize', () => {
+  if (editorState.active) editorRender();
+});
+
+document.getElementById('closeDetail').addEventListener('click', () => {
+  document.getElementById('detail').classList.remove('show');
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  editorState.active = false;
+});
+
+// Pre-export validation
+function preExportCheck() {
+  if (!editorState.active || !editorState.arrows.length) {
+    toast('Нет стрелок для экспорта', 'err');
+    return false;
+  }
+  // h2h check
+  let h2h = 0;
+  const arrows = editorState.arrows;
+  for (let ai = 0; ai < arrows.length; ai++) {
+    const path = arrows[ai]._path;
+    if (path.length < 2) continue;
+    const [hx, hy] = path[path.length - 1];
+    const [px, py] = path[path.length - 2];
+    const dx = hx - px, dy = hy - py;
+    const facingC = hx + dx, facingR = hy + dy;
+    for (let bi = ai + 1; bi < arrows.length; bi++) {
+      const bpath = arrows[bi]._path;
+      if (bpath.length < 2) continue;
+      const [bhx, bhy] = bpath[bpath.length - 1];
+      const [bpx, bpy] = bpath[bpath.length - 2];
+      if (bhx === facingC && bhy === facingR) {
+        const bdx = bhx - bpx, bdy = bhy - bpy;
+        if (bhx + bdx === hx && bhy + bdy === hy) h2h++;
+      }
+    }
+  }
+  if (h2h > 0) {
+    if (!confirm(`⚠ Обнаружено ${h2h} head-to-head пар. Уровень имеет коллизии.\n\nВсё равно экспортировать?`)) {
+      return false;
+    }
+  }
+  return true;
 }
 
-function showExport(){
-  if(!sil||!arrows.length)return;
-  const level=buildLevel();
-  const{gw,gh}=sil;
-  const sing=arrows.filter(a=>a.Indices.length===1).length;
-  document.getElementById('exportStats').innerHTML=`
-    <div class="sc"><div class="val">${arrows.length}</div><div class="lbl">СТРЕЛОК</div></div>
-    <div class="sc"><div class="val">${gw}×${gh}</div><div class="lbl">ГРИД</div></div>
-    <div class="sc"><div class="val">${arrows.reduce((s,a)=>s+a.Indices.length,0)}</div><div class="lbl">ЯЧЕЕК</div></div>
-    <div class="sc"><div class="val">${sing===0?'✓':'⚠'+sing}</div><div class="lbl">ОДИНОЧНЫХ</div></div>`;
-  const js=JSON.stringify(level,null,2);
-  document.getElementById('jsonBox').textContent=js.length>800?js.slice(0,800)+'\n...':js;
-}
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!preExportCheck()) return;
+  const name = getExportName();
+  const lvl = buildLevel();
+  downloadFile(JSON.stringify(lvl, null, 2), name + '.json', 'application/json');
+  toast('✓ ' + name + '.json', 'ok');
+});
 
-function buildPrefab(level,name){
-  const s=JSON.stringify(level).replace(/'/g,"''");
-  return `%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!1001 &6658644906848311588\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {fileID: 0}\n    m_Modifications:\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalPosition.x\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalPosition.y\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalPosition.z\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.w\n      value: 1\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.x\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.y\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalRotation.z\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalEulerAnglesHint.x\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalEulerAnglesHint.y\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 14192758341188600, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_LocalEulerAnglesHint.z\n      value: 0\n      objectReference: {fileID: 0}\n    - target: {fileID: 6007291936790831287, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: jsonString\n      value: '${s}'\n      objectReference: {fileID: 0}\n    - target: {fileID: 8552869564571161296, guid: 36693a5cc33e44cd9a348775821403dd,\n        type: 3}\n      propertyPath: m_Name\n      value: ${name}\n      objectReference: {fileID: 0}\n    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n  m_SourcePrefab: {fileID: 100100000, guid: 36693a5cc33e44cd9a348775821403dd, type: 3}\n`;
-}
+document.getElementById('exportPrefab').addEventListener('click', () => {
+  if (!preExportCheck()) return;
+  const name = getExportName();
+  const lvl = buildLevel();
+  downloadFile(buildPrefab(lvl, name), name + '.prefab', 'text/plain');
+  toast('✓ ' + name + '.prefab — Unity', 'ok');
+});
 
-function dl(content,filename,mime){
-  const blob=new Blob([content],{type:mime});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);a.download=filename;
-  document.body.appendChild(a);a.click();
-  document.body.removeChild(a);URL.revokeObjectURL(a.href);
-}
-function exportPrefab(){
-  const name=(document.getElementById('fname').value||'Level_new_HM').replace(/\.(prefab|json)$/,'');
-  dl(buildPrefab(buildLevel(),name),name+'.prefab','text/plain');
-  toast('✓ '+name+'.prefab скачан');
-}
-function exportJSON(){
-  const name=(document.getElementById('fname').value||'Level_new_HM').replace(/\.(prefab|json)$/,'');
-  dl(JSON.stringify(buildLevel(),null,2),name+'.json','application/json');
-  toast('✓ '+name+'.json скачан');
-}
-function copyJSON(){
-  navigator.clipboard.writeText(JSON.stringify(buildLevel()))
-    .then(()=>toast('✓ JSON скопирован!'))
-    .catch(()=>toast('Ошибка','err'));
-}
+document.getElementById('copyJsonBtn').addEventListener('click', async () => {
+  if (!preExportCheck()) return;
+  const lvl = buildLevel();
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(lvl));
+    toast('📋 JSON скопирован', 'ok');
+  } catch(e) {
+    toast('Ошибка копирования', 'err');
+  }
+});
 
-// Init
-updateGridSizeHint();
-setGenMode('auto');
-setDifficulty('easy');
+// Initial state
+log('Studio v7 готов. Выбери картинку, бакет, и жми создать.', 'info');
 </script>
+
 </body>
 </html>
