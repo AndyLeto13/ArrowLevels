@@ -2195,15 +2195,11 @@
           <span class="adv-sens-label" id="advSensLabel">80</span>
         </div>
       </div>
-      <div class="adv-row">
-        <div class="adv-label">Залатать дыры</div>
-        <div class="adv-control">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--text2)">
-            <input type="checkbox" id="advFillHoles">
-            <span>внутренние пустоты считать частью силуэта</span>
-          </label>
-        </div>
-      </div>
+      <!-- v7.77: чекбокс «Залатать дыры» удалён — теперь дырки заливаются всегда
+           (раньше юзеру приходилось включать вручную, а без неё генератор отказывал
+           работать с жёлтыми областями). Сам input id=advFillHoles оставлен скрытым
+           для совместимости с обработчиками. -->
+      <input type="checkbox" id="advFillHoles" checked style="display:none">
       <div class="adv-row">
         <div class="adv-label">Инверт силуэта</div>
         <div class="adv-control">
@@ -8561,14 +8557,8 @@ function updateAdvPreview() {
     const [c, r] = k.split('_').map(Number);
     pctx.fillRect(offX + c * cell, offY + r * cell, cell, cell);
   }
-  // Walls (внутренние пустоты) — желтоватые, но только если юзер их не перекрыл add
-  pctx.fillStyle = 'rgba(255, 235, 59, 0.55)';
-  for (const k of silBase.walls) {
-    if (advState.overrides.get(k) === 'add') continue;
-    const [c, r] = k.split('_').map(Number);
-    pctx.fillRect(offX + c * cell, offY + r * cell, cell, cell);
-  }
-  
+  // v7.77: walls больше нет — внутренние дырки залиты в cells на уровне детекции.
+
   // === Layer 2: OVERRIDES — ручные правки видно отдельно ===
   // ADD: бирюзовый (#00FFC8) с фиолетовым crossfade — клетка становится частью силуэта,
   //      но юзер видит что это РУЧНАЯ правка (контрастный цвет вместо обычного фиолета).
@@ -8646,7 +8636,6 @@ function updateAdvPreview() {
   document.getElementById('advPreviewInfo').innerHTML =
     `<b>${sil.gw}×${sil.gh}</b> грид · клетка ${cell}px · кисть ${advState.brushSize}<br>` +
     `<span style="color:#9D4BFF">■</span> силуэт: <b>${sil.cells.length}</b> клеток<br>` +
-    (sil.walls.length ? `<span style="color:#FFEB3B">■</span> внутр. стен: <b>${sil.walls.length}</b><br>` : '') +
     `<span style="color:var(--text3)">фон: ${sil.bgKind}</span>` +
     editedNote;
   document.getElementById('advGridHint').textContent = `${sil.gw}×${sil.gh}`;
@@ -8682,7 +8671,12 @@ function makeSilhouetteAdv(img, gridSpec, sensitivity, fillHoles, invert) {
   const canvas = document.createElement('canvas');
   canvas.width = gw; canvas.height = gh;
   const ctx = canvas.getContext('2d');
-  
+  // v7.77: явно включаем high-quality bilinear/bicubic resampling — браузеры
+  // дефолтно используют 'low' что даёт рваные границы на сильном downsample
+  // (фото 1000×800 → grid 30×24 = 33×). 'high' = lanczos-style, ровная граница.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
   // ★★★ FIT INSIDE с сохранением пропорций ★★★
   // Andy: «он не должен растягивать картинку. Условно картинка 30×15, грид
   // 50×50 — поднимаем плотность и вписываем по самой длинной части в притык,
@@ -8967,12 +8961,87 @@ function makeSilhouetteAdv(img, gridSpec, sensitivity, fillHoles, invert) {
     walls = newWalls;
   }
   
-  // Если fillHoles — добавляем стены в cells, оставляем walls пустым
-  if (fillHoles && walls.length) {
-    cells = cells.concat(walls);
+  // v7.77: ВСЕГДА заливаем внутренние дырки в cells (раньше — только по
+  // галочке fillHoles). Жёлтых walls больше нет ни в UI, ни в воркере.
+  // Если юзеру нужны legit-дырки (глазницы черепа) — стирает brush'ом.
+  // Сохраняем pixelMapData для залитых клеток чтобы color picker не падал.
+  if (walls.length) {
+    for (const k of walls) {
+      cells.push(k);
+      if (!pixelMapData[k]) pixelMapData[k] = { bright: 128 };
+    }
     walls = [];
   }
-  
+
+  // v7.77: Morphological smoothing границы силуэта (только в auto-mode —
+  // в advanced юзер ожидает 1:1 от пикселей и наш morph не должен мешать
+  // его ручным правкам). Close (dilate→erode) заполняет мелкие впадины,
+  // open (erode→dilate) убирает мелкие выпячивания. 1 итерация каждого.
+  // Граничные клетки усредняются — устраняет рваность из anti-aliasing
+  // при resize и шума на грани фигура/фон.
+  if (isAutoThresh && cells.length > 4) {
+    const N4 = [[1,0],[-1,0],[0,1],[0,-1]];
+    let cellSet = new Set(cells);
+
+    // CLOSE = dilate, then erode
+    // dilate: add neighbors of cells (capped to grid)
+    let dilated = new Set(cellSet);
+    for (const k of cellSet) {
+      const [c, r] = k.split('_').map(Number);
+      for (const [dc, dr] of N4) {
+        const nc = c+dc, nr = r+dr;
+        if (nc>=0 && nc<gw && nr>=0 && nr<gh) dilated.add(nc+'_'+nr);
+      }
+    }
+    // erode: keep only cells whose all 4-neighbors are in dilated
+    let closed = new Set();
+    for (const k of dilated) {
+      const [c, r] = k.split('_').map(Number);
+      let allIn = true;
+      for (const [dc, dr] of N4) {
+        const nc = c+dc, nr = r+dr;
+        if (nc<0 || nc>=gw || nr<0 || nr>=gh) continue;  // edge — пропускаем для не-схлопывания фигуры у края грида
+        if (!dilated.has(nc+'_'+nr)) { allIn = false; break; }
+      }
+      if (allIn) closed.add(k);
+    }
+
+    // OPEN = erode, then dilate (на результате close)
+    let eroded = new Set();
+    for (const k of closed) {
+      const [c, r] = k.split('_').map(Number);
+      let allIn = true;
+      for (const [dc, dr] of N4) {
+        const nc = c+dc, nr = r+dr;
+        if (nc<0 || nc>=gw || nr<0 || nr>=gh) continue;
+        if (!closed.has(nc+'_'+nr)) { allIn = false; break; }
+      }
+      if (allIn) eroded.add(k);
+    }
+    let opened = new Set(eroded);
+    for (const k of eroded) {
+      const [c, r] = k.split('_').map(Number);
+      for (const [dc, dr] of N4) {
+        const nc = c+dc, nr = r+dr;
+        if (nc>=0 && nc<gw && nr>=0 && nr<gh) opened.add(nc+'_'+nr);
+      }
+    }
+
+    // sanity: morph должен не «съесть» силуэт. Если размер изменился >25% —
+    // откатываем (на маленьких силуэтах morph может схлопнуть фигуру).
+    const before = cells.length, after = opened.size;
+    if (after >= before * 0.75 && after <= before * 1.25 && after >= 4) {
+      // Принимаем morph результат. Для новых клеток (которые dilate добавил)
+      // создадим pixelMapData с нейтральной яркостью.
+      const newCells = [];
+      for (const k of opened) {
+        newCells.push(k);
+        if (!pixelMapData[k]) pixelMapData[k] = { bright: 128 };
+      }
+      cells = newCells;
+    }
+  }
+
   return { cells, gw, gh, pixelMapData, walls, bgKind, autoThresh: isAutoThresh ? Math.round(thresh) : null };
 }
 
@@ -9111,9 +9180,8 @@ function updateMiniSil() {
   try {
     sil = makeSilhouetteAdv(imgEl, previewSpec, sensitivity, /*fillHoles*/ false, miniSilState.invert);
   } catch(e) { console.error('mini-sil:', e); return; }
-  const { gw, gh, cells, walls, autoThresh } = sil;
+  const { gw, gh, cells, autoThresh } = sil;
   const cellSet = new Set(cells);
-  const wallSet = new Set(walls);
   // Вписать gw×gh в 160×160 канвас с минимальным отступом
   const cell = Math.max(1, Math.floor(Math.min(160 / gw, 160 / gh)));
   cv.width = gw * cell; cv.height = gh * cell;
@@ -9121,9 +9189,8 @@ function updateMiniSil() {
   ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 0, cv.width, cv.height);
   for (let r = 0; r < gh; r++) for (let c = 0; c < gw; c++) {
     const k = c+'_'+r;
-    if (cellSet.has(k))      ctx.fillStyle = '#9d4bff';   // фигура
-    else if (wallSet.has(k)) ctx.fillStyle = '#ffeb3b';   // дырка/стена
-    else                     continue;                     // outside (фон) — не рисуем
+    if (!cellSet.has(k)) continue;       // v7.77: только фигура. Дырок-walls больше нет.
+    ctx.fillStyle = '#9d4bff';
     ctx.fillRect(c * cell, r * cell, cell, cell);
   }
   const fillR = (cells.length / (gw * gh) * 100) | 0;
@@ -14317,15 +14384,25 @@ function onDrawEnd(evt) {
     editorRender();
     return;
   }
-  // Запрещаем U-форму (стрелка стреляет в свой хвост)
-  if (isSelfCollidingPath(free, editorState.v.gw, editorState.v.gh)) {
-    toast('Стрелка летит в собственный хвост (U-форма) — нельзя', 'err');
-    editorRender();
-    return;
+  // v7.77: если стрелка self-collide (голова стреляет в свой бок/хвост) —
+  // разворачиваем направление (head <-> tail). Геометрия сохраняется, голова
+  // переезжает на противоположный конец, направление инвертируется. Если и
+  // reverse тоже self-collide (редкий двусторонний U-loop) — отказываем.
+  let arrowPath = free;
+  if (isSelfCollidingPath(arrowPath, editorState.v.gw, editorState.v.gh)) {
+    const reversed = arrowPath.slice().reverse();
+    if (!isSelfCollidingPath(reversed, editorState.v.gw, editorState.v.gh)) {
+      arrowPath = reversed;
+      toast('Стрелка развёрнута (head ↔ tail)', 'info');
+    } else {
+      toast('Стрелка зажата с обеих сторон — нарисуй по-другому', 'err');
+      editorRender();
+      return;
+    }
   }
   editorPushHistory();
   // Собираем все пути для добавления (оригинал + зеркальные копии)
-  const allPaths = [free];
+  const allPaths = [arrowPath];
   const mirror = editorState.mirror || 'none';
   if (mirror !== 'none') {
     const gw = editorState.v.gw, gh = editorState.v.gh;
@@ -14335,12 +14412,12 @@ function onDrawEnd(evt) {
       if (mode === 'v' || mode === 'both') nr = gh - 1 - r;
       return [nc, nr];
     });
-    if (mirror === 'h')    allPaths.push(mirrorPath(free, 'h'));
-    if (mirror === 'v')    allPaths.push(mirrorPath(free, 'v'));
+    if (mirror === 'h')    allPaths.push(mirrorPath(arrowPath, 'h'));
+    if (mirror === 'v')    allPaths.push(mirrorPath(arrowPath, 'v'));
     if (mirror === 'both') {
-      allPaths.push(mirrorPath(free, 'h'));
-      allPaths.push(mirrorPath(free, 'v'));
-      allPaths.push(mirrorPath(free, 'both'));
+      allPaths.push(mirrorPath(arrowPath, 'h'));
+      allPaths.push(mirrorPath(arrowPath, 'v'));
+      allPaths.push(mirrorPath(arrowPath, 'both'));
     }
   }
   // Добавляем каждый путь только если он валиден (свободен, не self-collide)
