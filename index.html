@@ -2390,13 +2390,17 @@
                 <div class="tool-popover-section-title">Структурно</div>
                 <button class="tool-popover-btn" id="toolRimReverse" title="ЗАВЕРНУТЬ ОБОД: разворачивает стрелки чьи головы у самой границы силуэта головами ВНУТРЬ. Структурная операция — резко уменьшает шаг 1 и поднимает depth, силуэт сохраняется. Параметр — глубина обода (0-4 клетки). Ctrl+Z откатит."><span class="tpb-ico">🌀</span><span class="tpb-text"><b>Завернуть обод</b><span class="tpb-sub">массовый реверс внешнего слоя</span></span></button>
                 <button class="tool-popover-btn" id="toolSnake" title="SNAKE: для каждой стрелки шага 1 удлиняет голову L/R-поворотами. Если упирается в h2h — обходит ↑↓←→ через свободные клетки. Силуэт растёт. Ctrl+Z откатит."><span class="tpb-ico">🐍</span><span class="tpb-text"><b>Snake</b><span class="tpb-sub">удлиняет головы шага 1</span></span></button>
+                <!-- v7.79: ⚜ Калейдоскоп переехал сюда с toolbar surface -->
+                <button class="tool-popover-btn" id="toolKaleidoscope4x" title="⚜ Калейдоскоп: 2×2 матрица где соседние копии ЗЕРКАЛЬНЫ (как лепестки). Стрелки на швах с встречными головами удаляются ОБЕ. Силуэт тоже зеркалится. Ctrl+Z откатит."><span class="tpb-ico">⚜</span><span class="tpb-text"><b>Калейдоскоп</b><span class="tpb-sub">2×2 зеркальная матрица</span></span></button>
                 <div class="tool-popover-section-title">Анализ</div>
                 <button class="tool-popover-btn" id="toolBeams" title="БАЛКИ: показывает несущие стрелки уровня. Красные — критические (без них уровень рушится / резко падает depth). Жёлтые — полу-несущие. Подсветка остаётся пока режим включён, можно свободно редактировать."><span class="tpb-ico">🏗</span><span class="tpb-text"><b>Балки</b><span class="tpb-sub">подсветка несущих стрелок</span></span></button>
                 <button class="tool-popover-btn" id="toolBeamsRefresh" title="ОБНОВИТЬ БАЛКИ: пересчитывает несущие стрелки с учётом текущих правок уровня. Активна только когда режим Балок включён." style="display:none;"><span class="tpb-ico">🔄</span><span class="tpb-text"><b>Обновить балки</b><span class="tpb-sub">пересчёт после правок</span></span></button>
+                <!-- v7.79: 🪞 Зеркало переехал сюда с toolbar surface (Andy: «люди путаются») -->
+                <button class="tool-popover-btn" id="v75MirrorToolBtn" title="🪞 Зеркало (was/now): сделай snapshot текущей аналитики, потом редактируй — рядом с каждой цифрой увидишь ↑зелёную/↓красную дельту: насколько улучшил/ухудшил. Нажми ещё раз чтобы сбросить snapshot."><span class="tpb-ico">🪞</span><span class="tpb-text"><b>Зеркало (was/now)</b><span class="tpb-sub">snapshot аналитики для сравнения</span></span></button>
               </div>
             </div>
             <!-- v7.29: ✖4 Дубль и 🎨 Двойные отключены (Andy: «не нужны»). Handlers в JS сохранены под if(btn)/if(handler) — кнопки убраны из toolbar, simpleflow вынесен всегда видимым ниже. См. project_arrow_studio_hybrid.md / memory_disabled_features.md для восстановления. -->
-            <button class="tool-btn" id="toolKaleidoscope4x" title="⚜ Калейдоскоп: 2×2 матрица где соседние копии ЗЕРКАЛЬНЫ (как лепестки). Стрелки на швах с встречными головами удаляются ОБЕ. Силуэт тоже зеркалится. Ctrl+Z откатит.">⚜ Калейдоскоп</button>
+            <!-- v7.79: ⚜ Калейдоскоп переехал в Сложность popover (Andy: «спрячь в сложность») — кнопка-источник ниже в difficultyMenu, id сохранён. -->
             <div class="tool-popover-wrap">
               <button class="tool-btn" id="toolSilhouette" title="СИЛУЭТ: открыть меню работы с силуэтом — обрезать, инвертировать, залатать дыры. Картинка должна быть загружена.">🎭 Силуэт ▾</button>
               <div id="silhouetteMenu" class="tool-popover" style="display:none; min-width:280px;">
@@ -2426,8 +2430,10 @@
                 <button class="tool-popover-btn" id="toolPatchHoles" title="Заполнить пустые клетки силуэта новыми стрелками 2-15 кл. Соблюдает правила (нет h2h, нет self-hit). Авто-Resolve перед патчем."><span class="tpb-ico">🩹</span><span class="tpb-text"><b>Залатать дыры</b><span class="tpb-sub">заполняет пустоты в силуэте</span></span></button>
               </div>
             </div>
+            <!-- v7.79: дубль 🩹 Залатать дыры на поверхность toolbar (Andy: «добавить дубликат выше что бы была на поверхности»). Триггерит существующий toolPatchHoles в popover «🎭 Силуэт». -->
+            <button class="tool-btn" id="toolPatchHolesSurface" title="🩹 Залатать дыры: заполнить пустые клетки силуэта новыми стрелками 2-15 кл. Дубль из popover «🎭 Силуэт».">🩹 Залатать</button>
             <button class="tool-btn" id="v75ProToolBtn" title="Analytics PRO — углублённая аналитика variant'а. Открывается справа side-panel.">📊 PRO</button>
-            <button class="tool-btn" id="v75MirrorToolBtn" title="🪞 Зеркало (was/now): сделай snapshot текущей аналитики, потом редактируй — рядом с каждой цифрой увидишь ↑зелёную/↓красную дельту: насколько улучшил/ухудшил. Нажми ещё раз чтобы сбросить snapshot.">🪞 Зеркало</button>
+            <!-- v7.79: 🪞 Зеркало переехал в Сложность popover (Andy: «люди путаются, кинь в сложность»). -->
             <button class="tool-btn" id="toolPlayMode" title="▶ Играть — режим симуляции: кликни стрелку, она летит по своему направлению. Если упрётся в препятствие — белеет и возвращается. Esc или повторное ▶ — выход (стрелки возвращаются в исходные позиции).">▶ Играть</button>
             <button class="tool-btn" id="toolPlayPause" style="display:none;" title="⏸ Пауза (Пробел) — приостановить симуляцию. Повторный клик / пробел — возобновить.">⏸ Пауза</button>
             <button class="tool-btn" id="toolUndo" title="Откат (Ctrl+Z)">↶ Назад</button>
@@ -8211,9 +8217,11 @@ const advState = {
   enabled: false,
   gridSize: 30,
   sensitivity: 80,
-  fillHoles: false,
+  fillHoles: false,            // legacy state; в v7.77+ дырки всегда заливаются в makeSilhouetteAdv
   invert: false,               // инверт силуэта: фигура темнее фона (как в старом arrow_editor)
-  offline: (() => { try { return localStorage.getItem('arrowstudio.offline')==='1'; } catch(e) { return false; } })(),
+  // v7.80: дефолт true. Если юзер уже сохранил выбор в localStorage — уважаем его.
+  // Если ключа нет — true. Andy: «по дефолту всегда включена галка оффлайн режим надо сделать».
+  offline: (() => { try { const v = localStorage.getItem('arrowstudio.offline'); return v == null ? true : v === '1'; } catch(e) { return true; } })(),
   drawMode: 'none',           // 'none' | 'add' | 'erase'
   brushSize: 1,                // 1=одна клетка, 2=3×3, 3=5×5, 4=7×7, 5=9×9 (radius=brushSize-1)
   overrides: new Map(),        // 'c_r' → 'add' | 'erase'
@@ -9161,27 +9169,42 @@ function updateMiniSil() {
   const info = document.getElementById('silMiniInfo');
   if (!imgEl || !wrap || !cv) return;
   wrap.style.display = 'flex';
-  // Если юзер задал custom grid — используем его (показываем то что реально 
-  // увидит генератор). Иначе — медиана auto-recommend.
-  let previewSpec;  // либо число (gridMin) либо {gw, gh}
-  try {
-    const sr = recommendSizes(imgEl, bucket || 'medium', 3);
-    if (sr.isCustom && sr.customGrids && sr.customGrids.length) {
-      const cg = sr.customGrids[0];
-      previewSpec = { gw: cg.gw, gh: cg.gh };
-    } else if (sr.sizes && sr.sizes.length) {
-      previewSpec = sr.sizes[Math.floor(sr.sizes.length / 2)];
-    } else {
-      previewSpec = 28;
-    }
-  } catch(e) { previewSpec = 28; }
-  const sensitivity = miniSilState.sensitivity == null ? 'auto' : miniSilState.sensitivity;
+
+  // v7.78: если advanced включён — зеркалим параметры advState (gridSize,
+  // sensitivity, fillHoles, invert). Так minimap показывает РОВНО то что
+  // увидит генератор. Andy: «минимапа не корректно ща показывает все,
+  // в продвинутых настройках корректно».
+  let previewSpec, sensitivity, fillHoles, invert;
+  if (advState && advState.enabled) {
+    previewSpec = advState.gridSize;
+    sensitivity = advState.sensitivity;
+    fillHoles = advState.fillHoles;
+    invert = advState.invert;
+  } else {
+    // Auto-mode: previewSpec по recommendSizes, остальное из miniSilState.
+    try {
+      const sr = recommendSizes(imgEl, bucket || 'medium', 3);
+      if (sr.isCustom && sr.customGrids && sr.customGrids.length) {
+        const cg = sr.customGrids[0];
+        previewSpec = { gw: cg.gw, gh: cg.gh };
+      } else if (sr.sizes && sr.sizes.length) {
+        previewSpec = sr.sizes[Math.floor(sr.sizes.length / 2)];
+      } else {
+        previewSpec = 28;
+      }
+    } catch(e) { previewSpec = 28; }
+    sensitivity = miniSilState.sensitivity == null ? 'auto' : miniSilState.sensitivity;
+    fillHoles = advState ? advState.fillHoles : true;  // default true в v7.78
+    invert = miniSilState.invert;
+  }
+
   let sil;
   try {
-    sil = makeSilhouetteAdv(imgEl, previewSpec, sensitivity, /*fillHoles*/ false, miniSilState.invert);
+    sil = makeSilhouetteAdv(imgEl, previewSpec, sensitivity, fillHoles, invert);
   } catch(e) { console.error('mini-sil:', e); return; }
-  const { gw, gh, cells, autoThresh } = sil;
+  const { gw, gh, cells, walls, autoThresh } = sil;
   const cellSet = new Set(cells);
+  const wallSet = new Set(walls || []);
   // Вписать gw×gh в 160×160 канвас с минимальным отступом
   const cell = Math.max(1, Math.floor(Math.min(160 / gw, 160 / gh)));
   cv.width = gw * cell; cv.height = gh * cell;
@@ -9189,16 +9212,21 @@ function updateMiniSil() {
   ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 0, cv.width, cv.height);
   for (let r = 0; r < gh; r++) for (let c = 0; c < gw; c++) {
     const k = c+'_'+r;
-    if (!cellSet.has(k)) continue;       // v7.77: только фигура. Дырок-walls больше нет.
-    ctx.fillStyle = '#9d4bff';
+    if (cellSet.has(k))      { ctx.fillStyle = '#9d4bff'; }
+    else if (wallSet.has(k)) { ctx.fillStyle = '#FFC107'; }  // янтарь — внутренние пустоты
+    else                     { continue; }
     ctx.fillRect(c * cell, r * cell, cell, cell);
   }
   const fillR = (cells.length / (gw * gh) * 100) | 0;
-  const labelSens = miniSilState.sensitivity == null
+  const labelSens = sensitivity === 'auto' || sensitivity == null
     ? `auto${autoThresh ? '='+autoThresh : ''}`
-    : miniSilState.sensitivity;
+    : sensitivity;
   document.getElementById('silMiniSensLabel').textContent = labelSens;
-  if (info) info.textContent = `${gw}×${gh} (${(bucket||'medium').toUpperCase()}) · ${fillR}%${walls.length?' · '+walls.length+' дыр':''}${miniSilState.invert?' · инверт':''}`;
+  if (info) {
+    const wInfo = (walls && walls.length) ? ` · ${walls.length} пустот` : '';
+    const advNote = (advState && advState.enabled) ? ' · adv' : '';
+    info.textContent = `${gw}×${gh} (${(bucket||'medium').toUpperCase()}) · ${fillR}%${wInfo}${invert?' · инверт':''}${advNote}`;
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -17216,6 +17244,12 @@ function yieldUI() {
 // Заполняет пустые клетки внутри силуэта новыми стрелками длиной 5-20 кл.,
 // соблюдает правила (h2h-free, no self-hit). Если длинная не помещается —
 // короче и проще.
+// v7.79: surface-дубль кнопки рядом с PRO — триггерит ту же логику через click.
+const _patchHolesSurfaceBtn = document.getElementById('toolPatchHolesSurface');
+if (_patchHolesSurfaceBtn) _patchHolesSurfaceBtn.addEventListener('click', () => {
+  const src = document.getElementById('toolPatchHoles');
+  if (src) src.click();
+});
 const _patchHolesBtn = document.getElementById('toolPatchHoles');
 if (_patchHolesBtn) _patchHolesBtn.addEventListener('click', async () => {
   console.log('[patchHoles] click. editor:', !!editorState.active, 'v:', editorState.v && editorState.v.sizeKey);
@@ -19828,7 +19862,12 @@ log('Studio v' + STUDIO_VERSION + ' (engine ' + ENGINE_VERSION + ') готов. 
       </div>
     </div>
     <div id="blankErr" style="color:#ff6b6b;font-size:11px;min-height:14px;margin-bottom:8px"></div>
-    <div style="font-size:11px;color:var(--text3,#888);margin-bottom:16px">от 5 до 80 на сторону</div>
+    <div style="font-size:11px;color:var(--text3,#888);margin-bottom:12px">от 5 до 80 на сторону</div>
+    <!-- v7.78: галка «с силуэтом маски» — если фото загружено, можно начать с силуэта картинки -->
+    <label id="blankWithMaskLabel" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2,#aaa);margin-bottom:14px;padding:8px 10px;background:rgba(157,75,255,0.06);border:1px solid rgba(157,75,255,0.2);border-radius:6px">
+      <input type="checkbox" id="blankWithMask" checked style="cursor:pointer">
+      <span>🖼 С силуэтом из картинки <span id="blankWithMaskNote" style="color:var(--text3,#666);font-size:10px"></span></span>
+    </label>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button id="blankCancel" type="button" style="padding:8px 16px;background:transparent;border:1px solid var(--border,#3a3a4a);border-radius:6px;color:var(--text2,#aaa);cursor:pointer;font-size:13px">Отмена</button>
       <button id="blankOk" type="button" style="padding:8px 20px;background:linear-gradient(135deg,#a855f7,#ec4899);border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:600">Создать</button>
@@ -20182,6 +20221,9 @@ if (typeof global !== 'undefined') global.LevelMetrics = __api;
   const okBtn = document.getElementById('blankOk');
   const cancelBtn = document.getElementById('blankCancel');
   const errEl = document.getElementById('blankErr');
+  const withMask = document.getElementById('blankWithMask');
+  const withMaskLabel = document.getElementById('blankWithMaskLabel');
+  const withMaskNote = document.getElementById('blankWithMaskNote');
   if (!btn || !modal || !wInput || !hInput || !okBtn || !cancelBtn) {
     console.error('blank canvas: не найдены DOM элементы', {btn:!!btn, modal:!!modal, wInput:!!wInput, hInput:!!hInput, okBtn:!!okBtn, cancelBtn:!!cancelBtn});
     return;
@@ -20189,6 +20231,15 @@ if (typeof global !== 'undefined') global.LevelMetrics = __api;
 
   function open() {
     errEl.textContent = '';
+    // v7.78: галка «с силуэтом» доступна только если фото загружено
+    if (withMask && withMaskLabel) {
+      const hasImg = !!(typeof imgEl !== 'undefined' && imgEl);
+      withMask.disabled = !hasImg;
+      withMaskLabel.style.opacity = hasImg ? '1' : '0.4';
+      withMaskLabel.style.cursor = hasImg ? 'pointer' : 'not-allowed';
+      if (!hasImg) withMask.checked = false;
+      if (withMaskNote) withMaskNote.textContent = hasImg ? '' : '(сначала загрузи фото)';
+    }
     modal.style.display = 'flex';
     setTimeout(() => wInput.focus(), 50);
   }
@@ -20201,13 +20252,27 @@ if (typeof global !== 'undefined') global.LevelMetrics = __api;
       errEl.textContent = 'Размер должен быть от 5 до 80 (для каждой стороны)';
       return;
     }
-    // Создаём фейковый variant. selectCard (определён в основном скрипте,
-    // тут глобально доступен) ожидает { gw, gh, arrows, silCellsArr, score, cls }.
-    // Пустой arrows — норм, редактор это переживает.
+    // v7.78: если галка «с силуэтом» включена и фото загружено — считаем силуэт
+    // на заданном размере и кладём его в silCellsArr. Юзер попадёт в редактор
+    // с уже подсвеченным силуэтом и сможет рисовать только внутри него.
+    let silCellsArr = [];
+    if (withMask && withMask.checked && typeof imgEl !== 'undefined' && imgEl) {
+      try {
+        const fillH = (typeof advState !== 'undefined' && advState) ? advState.fillHoles : true;
+        const inv   = (typeof advState !== 'undefined' && advState) ? advState.invert    : false;
+        const sens  = (typeof advState !== 'undefined' && advState && advState.enabled) ? advState.sensitivity : 'auto';
+        const sil = makeSilhouetteAdv(imgEl, { gw: w, gh: h }, sens, fillH, inv);
+        if (sil && sil.cells) {
+          silCellsArr = sil.cells.map(k => k.split('_').map(Number));
+        }
+      } catch(e) {
+        console.warn('blank with mask: silhouette compute failed', e);
+      }
+    }
     const fakeVariant = {
       gw: w, gh: h,
       arrows: [],
-      silCellsArr: [],
+      silCellsArr,
       score: 0,
       cls: 'easy',
       sizeKey: w + '×' + h,
@@ -20220,7 +20285,8 @@ if (typeof global !== 'undefined') global.LevelMetrics = __api;
     currentVariants.length = 0;
     currentVariants.push(fakeVariant);
     selectCard(0);
-    if (typeof log === 'function') log('🆕 Чистый холст ' + w + '×' + h + ' создан', 'ok');
+    const maskNote = silCellsArr.length ? ` (с силуэтом, ${silCellsArr.length} клеток)` : '';
+    if (typeof log === 'function') log('🆕 Чистый холст ' + w + '×' + h + ' создан' + maskNote, 'ok');
     close();
   }
 
