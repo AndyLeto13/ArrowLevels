@@ -10790,6 +10790,18 @@ async function startGeneration() {
           log(`✓ ${msg.sizeKey} · arrows=${msg.arrows.length}${depthStr} · bucket=${predBucket.toUpperCase()}${npStr} · попыток=${msg.attempts}${triesLabel}`, 'ok');
           const where = advState.offline ? 'worker.elapsed' : 'server.elapsed';
           log(`  ⏱ +${elapsed}ms total · ${where}=${msg.elapsedMs}ms · с предыдущего variant=${sinceLastVar}ms${networkLatency!=null?` · сеть≈${networkLatency}ms`:''}`, 'info');
+          // v7.81: автопокраска по фото — если imgEl загружен, перекрашиваем
+          // msg.arrows средним цветом пикселей картинки под клетками. Юзер
+          // раньше жал «🎨 По картинке» вручную после каждой генерации;
+          // теперь карточка появляется уже в правильных цветах, и редактор
+          // при click открывает variant с фото-палитрой. Если фото нет —
+          // helper возвращает 0 и ничего не делает.
+          try {
+            if (typeof window._autoPaintArrowsByPhoto === 'function') {
+              const painted = window._autoPaintArrowsByPhoto(msg.arrows, msg.gw, msg.gh);
+              if (painted > 0) log(`  🎨 ${msg.sizeKey} автопокрашено ${painted} стрелок по фото`, 'info');
+            }
+          } catch(e) { console.warn('[auto-paint-photo]', e); }
           renderCardOrReplace(msg);
 
           // Если variant уже открыт в редакторе (rare race) — пересинкать
@@ -17613,6 +17625,46 @@ if (_patchHolesBtn) _patchHolesBtn.addEventListener('click', async () => {
     hideEditorBusy();
   }
 });
+
+// ─── v7.81: автопокраска arrows по фото для cards/editor ────────────────
+// Если imgEl загружен — для каждой стрелки берёт средний цвет пикселей
+// картинки под её клетками, пишет в a.color (AABBCCFF) + a._hex. Не трогает
+// _photoColor и _colors. Использует FULL pixel-map (drawImage gw×gh
+// nearest-neighbor) — независим от silhouette mask, красит и стрелки вне
+// маски. Вызывается из variant_done flow ДО renderCardOrReplace, чтобы
+// карточка появлялась уже в цветах фотки. Возвращает кол-во покрашенных.
+window._autoPaintArrowsByPhoto = function(arrows, gw, gh) {
+  if (typeof imgEl === 'undefined' || !imgEl) return 0;
+  if (!Array.isArray(arrows) || !arrows.length || !gw || !gh) return 0;
+  let pmap;
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = gw; cv.height = gh;
+    const cx = cv.getContext('2d');
+    cx.imageSmoothingEnabled = false;  // чёткие пиксельные цвета без размытия
+    cx.drawImage(imgEl, 0, 0, gw, gh);
+    pmap = cx.getImageData(0, 0, gw, gh).data;
+  } catch(e) { console.warn('[auto-paint-photo] canvas error', e); return 0; }
+  const h = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0').toUpperCase();
+  let painted = 0;
+  for (const a of arrows) {
+    const path = a._path || [];
+    if (!path.length) continue;
+    let sr = 0, sg = 0, sb = 0, cnt = 0;
+    for (const [c, r] of path) {
+      if (c < 0 || r < 0 || c >= gw || r >= gh) continue;
+      const idx = (r * gw + c) * 4;
+      if (pmap[idx + 3] < 8) continue;  // прозрачный пиксель — пропуск
+      sr += pmap[idx]; sg += pmap[idx + 1]; sb += pmap[idx + 2]; cnt++;
+    }
+    if (cnt > 0) {
+      a.color = h(sr / cnt) + h(sg / cnt) + h(sb / cnt) + 'FF';
+      a._hex = '#' + a.color.slice(0, 6);
+      painted++;
+    }
+  }
+  return painted;
+};
 
 // ─── 🎨 ПО КАРТИНКЕ — pixel-art recolor (v7.14) ──────────────────────────
 // Для каждой стрелки в editor: берём средний RGB пикселей картинки под её
